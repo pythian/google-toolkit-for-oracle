@@ -175,7 +175,7 @@
       The --ora-db-home-dir parameter must point to a valid Oracle Database home with a functioning Oracle binary.
       This should be the path to the Oracle Database software installation, not the Grid Infrastructure home.
   when:
-    - calling_script != "install-oracle.sh"
+    - calling_script == "add-database.sh"
     - oracle_binary.stat is defined
     - not oracle_binary.stat.exists | default(false) | bool
     - oracle_binary_alt is not defined or not oracle_binary_alt.stat.exists | default(false) | bool
