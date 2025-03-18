@@ -198,9 +198,9 @@ BACKUP_LOG_LOCATION_PARAM="^/.+$"
 export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
 
 ###
-GETOPT_MANDATORY="instance-ip-addr:,ora-db-home-dir:"
+GETOPT_MANDATORY="instance-ip-addr:"
 GETOPT_OPTIONAL="ora-db-name:,ora-db-domain:,ora-db-charset:,ora-db-ncharset:,ora-db-container:,ora-db-type:"
-GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-pdb-name-prefix:,ora-pdb-count:,ora-redo-log-size:"
+GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-db-home-dir:,ora-pdb-name-prefix:,ora-pdb-count:,ora-redo-log-size:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-data-destination:,ora-reco-destination:,ora-listener-port:,ora-listener-name:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-dest:,backup-redundancy:,archive-redundancy:,archive-online-days:,backup-level0-days:,backup-level1-days:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-start-hour:,backup-start-min:,archive-backup-min:,backup-script-location:,backup-log-location:"
@@ -436,7 +436,7 @@ shopt -s nocasematch
   echo "Incorrect parameter provided for ora-db-type: $ORA_DB_TYPE"
   exit 1
 }
-[[ ! "$ORA_DB_HOME_DIR" =~ $ORA_DB_HOME_DIR_PARAM ]] && {
+[[ -n "$ORA_DB_HOME_DIR" && ! "$ORA_DB_HOME_DIR" =~ $ORA_DB_HOME_DIR_PARAM ]] && {
   echo "Incorrect parameter provided for ora-db-home-dir: $ORA_DB_HOME_DIR"
   exit 1
 }

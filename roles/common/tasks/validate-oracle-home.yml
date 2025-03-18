@@ -19,7 +19,32 @@
     calling_script: "{{ lookup('env', 'CALLING_SCRIPT') | default('unknown', true) }}"
   tags: always
 
-- name: Verify Oracle Home parameter was provided for add-database.sh
+- name: Check for Oracle homes in /etc/oratab
+  shell: |
+    if [ -f /etc/oratab ]; then
+      grep -v "^#" /etc/oratab | grep -v "^$" | grep -v "^+ASM" | 
+        awk -F: '{print $2}' | 
+        xargs -I{} bash -c 'HOME="{}"; if [ -x "$HOME/bin/oracle" ]; then echo "$HOME"; fi' | head -1
+    fi
+  register: oratab_first_valid_home
+  failed_when: false
+  changed_when: false
+  when: 
+    - lookup('env', 'ORA_DB_HOME_DIR') is not defined or lookup('env', 'ORA_DB_HOME_DIR')|length == 0
+    - calling_script == 'add-database.sh'
+  tags: always
+
+- name: Set Oracle Home from /etc/oratab if available and parameter not provided
+  set_fact:
+    oracle_home: "{{ oratab_first_valid_home.stdout }}"
+  when: 
+    - lookup('env', 'ORA_DB_HOME_DIR') is not defined or lookup('env', 'ORA_DB_HOME_DIR')|length == 0
+    - calling_script == 'add-database.sh'
+    - oratab_first_valid_home.stdout is defined
+    - oratab_first_valid_home.stdout|length > 0
+  tags: always
+
+- name: Verify Oracle Home parameter was provided for add-database.sh if no valid homes in oratab
   fail:
     msg: |
       The --ora-db-home-dir parameter is required when using add-database.sh.
@@ -27,6 +52,7 @@
       Example: --ora-db-home-dir=/u01/app/oracle/product/21.3.0/dbhome_1
   when:
     - (lookup('env', 'ORA_DB_HOME_DIR') is not defined or lookup('env', 'ORA_DB_HOME_DIR')|length == 0)
+    - (oratab_first_valid_home.stdout is not defined or oratab_first_valid_home.stdout|length == 0)
     - calling_script == 'add-database.sh' or lookup('env', 'ORACLE_HOME_REQUIRED') | default('false') | bool
   tags: always
 
