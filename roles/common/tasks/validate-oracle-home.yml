@@ -45,12 +45,32 @@
   tags: always
 
 # Basic validation of Oracle home only when required (for add-database.sh)
-- name: Check if Oracle home exists
+- name: Check if Oracle home exists (with .0 suffix)
   stat:
     path: "{{ oracle_home }}/bin/oracle"
   register: oracle_binary
   failed_when: false
   when: calling_script != "install-oracle.sh"
+  tags: always
+
+- name: Check if Oracle home exists (without .0 suffix)
+  stat:
+    path: "{{ oracle_home | regex_replace('\\.[0-9]+(?=/dbhome)', '') }}/bin/oracle"
+  register: oracle_binary_alt
+  failed_when: false
+  when: 
+    - calling_script != "install-oracle.sh"
+    - not oracle_binary.stat.exists | default(false) | bool
+    - oracle_home is match('.*\\.[0-9]+/dbhome.*')
+  tags: always
+  
+- name: Update Oracle home path if alternative path exists
+  set_fact:
+    oracle_home: "{{ oracle_home | regex_replace('\\.[0-9]+(?=/dbhome)', '') }}"
+  when:
+    - not oracle_binary.stat.exists | default(false) | bool
+    - oracle_binary_alt.stat is defined
+    - oracle_binary_alt.stat.exists | default(false) | bool
   tags: always
   
 - name: Check oratab entries for valid homes
@@ -80,8 +100,9 @@
   block:
     - name: Get version from installed Oracle binary
       shell: |
-        if [ -x "{{ oracle_home }}/bin/oracle" ]; then
-          VERSION=$(strings {{ oracle_home }}/bin/oracle | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | head -1)
+        ORACLE_HOME_PATH="{{ oracle_home }}"
+        if [ -x "${ORACLE_HOME_PATH}/bin/oracle" ]; then
+          VERSION=$(strings ${ORACLE_HOME_PATH}/bin/oracle | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | head -1)
           if [ -n "$VERSION" ]; then
             echo "$VERSION"
           else
@@ -89,7 +110,7 @@
             if [ -f /etc/oraInst.loc ]; then
               INVENTORY_LOC=$(cat /etc/oraInst.loc | grep inventory_loc | cut -d= -f2)
               if [ -f "${INVENTORY_LOC}/ContentsXML/inventory.xml" ]; then
-                grep -A 10 -B 2 "$(basename {{ oracle_home }})" "${INVENTORY_LOC}/ContentsXML/inventory.xml" | 
+                grep -A 10 -B 2 "$(basename ${ORACLE_HOME_PATH})" "${INVENTORY_LOC}/ContentsXML/inventory.xml" | 
                   grep -o "VER=\"[^\"]*\"" | head -1 | cut -d= -f2 | tr -d '"'
               fi
             fi
@@ -131,4 +152,5 @@
     - calling_script != "install-oracle.sh"
     - oracle_binary.stat is defined
     - not oracle_binary.stat.exists | default(false) | bool
+    - oracle_binary_alt is not defined or not oracle_binary_alt.stat.exists | default(false) | bool
   tags: always
