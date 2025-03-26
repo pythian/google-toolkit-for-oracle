@@ -46,6 +46,7 @@
 
 - name: Adjust instance memory values (not 11.2 or 12.1)
   set_fact:
+    # No need to convert units, we pass variables with their units intact
     sga_target_bytes: "{{ sga_target }}"
     pga_aggtar_bytes: "{{ pga_aggtar }}"
   when: oracle_ver not in ['11.2.0.4.0','12.1.0.2.0']
@@ -53,9 +54,16 @@
 
 - name: Adjust instance memory values (11.2 and 12.1)
   set_fact:
+    # For older Oracle versions, we need to strip the 'M' suffix for compatibility
+    # But we'll retain the numeric precision by using regex_replace instead of truncating
     sga_target_bytes: "{{ sga_target | regex_replace('M$', '') }}"
     pga_aggtar_bytes: "{{ pga_aggtar | regex_replace('M$', '') }}"
   when: oracle_ver in ['11.2.0.4.0','12.1.0.2.0']
+  tags: db-create
+
+- name: Show memory settings
+  debug:
+    msg: "Using memory settings: SGA_TARGET={{ sga_target }}, PGA_AGGREGATE_TARGET={{ pga_aggtar }}, MEMORY_PERCENT={{ effective_memory_pct | default(memory_pct) }}%"
   tags: db-create
 
 # Note: swlib_unzip_path is already defined in group_vars/all.yml
