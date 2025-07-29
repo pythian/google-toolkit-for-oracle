@@ -65,8 +65,7 @@ rdbms_patches:
 #   - method: The command used to apply the patch (e.g., "opatch apply").
 ## Example entries are commented out for reference.
   # - { category: "RU", base: "21.3.0.0.0", release: "21.17.0.0.0", patchnum: "37350281", patchfile: "p37350281_210000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "dQjBqlXWOumEZU3QAJzD9Q==" }
-  # - { category: "RU", base: "21.3.0.0.0", release: "21.18.0.0.0", patchnum: "37655430", patchfile: "p37655430_210000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "4JhJvWSOeDMYUIupR0jFZA==" }
-
+  - { category: "RU", base: "19.0.0.0.0", release: "19.18.0.0.0", patchnum: "37960098", patchfile: "p37960098_190000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "4GhJvWSOeDMYUIupR0jFZA==" }
 documentation_overrides:
 #   An optional section to control automated documentation generation.
 #   - skip_docs_update: Set to true to prevent any documentation updates.
