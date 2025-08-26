@@ -136,3 +136,20 @@ bash ./install-oracle.sh \
   --ora-asm-disks-json '[{"diskgroup":"DATA","disks":[{"blk_device":"/dev/disk/by-id/google-oracle-asm-data-1","name":"DATA1"}]},{"diskgroup":"RECO","disks":[{"blk_device":"/dev/disk/by-id/google-oracle-asm-reco-1","name":"RECO1"}]}]' \
   --ora-db-name ORCL
 ```
+
+### Oracle Database Free
+
+Provisioning [Oracle Database Free](https://www.oracle.com/database/free/) edition is even simpler. The installation automatically sources the required RPM files directly from the Oracle website, although you can still download and stage the software if you prefer. Therefore, there's no need to set up or provide the installation script with details of a Google Cloud storage bucket.
+
+Installing the software and setting up an Oracle Database Free database can be as simple as:
+
+```bash
+./install-oracle.sh \
+  --instance-ip-addr ${INSTANCE_IP_ADDR} \
+  --instance-ssh-key "${HOME}/.ssh/id_rsa_oracle_toolkit" \
+  --ora-edition FREE \
+  --ora-data-mounts-json '[{"purpose":"software","blk_device":"/dev/disk/by-id/google-oracle-disk-1","name":"u01","fstype":"xfs","mount_point":"/u01","mount_opts":"nofail"}]' \
+  --backup-dest /u01/app/oracle/fast_recovery_area/FREE
+```
+
+For additional details on Oracle Database Free edition installs see the [Oracle Database Free Edition Specific Details and Changes](user-guide.md#oracle-database-free-edition-specific-details-and-changes) section of the main user guide.
