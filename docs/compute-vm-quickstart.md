@@ -13,7 +13,9 @@ Before using this toolkit, a small number of Google Cloud prerequisites are requ
 - A [Cloud Storage bucket](https://cloud.google.com/storage/docs/buckets) where the required software media can be staged. (Details on the required software can be found in the [Downloading and staging the Oracle Software](user-guide.md#downloading-and-staging-the-oracle-software) section of the main user guide).
 - A [Compute Engine default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) with the **Storage Object Viewer** (`roles/storage.objectViewer`) role on the Cloud Storage bucket.
 
-Additionally, a VM to act as the Ansible [Control Node](https://docs.ansible.com/ansible/2.9/user_guide/basic_concepts.html#control-node) with the JMESpath and Google Cloud CLI utilities installed, and the toolkit downloaded.
+> **NOTE:** This toolkit allows you to install any addition of Oracle Database including Free edition. When installing Free edition, the storage bucket prerequisites are not mandatory. See the (Oracle Database Free)[#oracle-database-free] section of this document for the quick-start installation command specific to Free edition.
+
+A VM to act as the Ansible [Control Node](https://docs.ansible.com/ansible/2.9/user_guide/basic_concepts.html#control-node) with the JMESpath and Google Cloud CLI utilities installed, and the toolkit downloaded is also required.
 
 For details on creating and configuring the Ansible Control Node see the [Ansible Control Node Provisioning & Setup](compute-vm-user-guide.md#ansible-control-node-provisioning--setup) section of the full [Oracle Toolkit for Google Cloud - Compute Engine VM User Guide](compute-vm-user-guide.md).
 
