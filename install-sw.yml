@@ -81,7 +81,7 @@
       when: cluster_type == "RAC"
   tags: rac-gi,ssh-keys
 
-- hosts: dbasm[0]
+- hosts: dbasm
   remote_user: "{{ grid_user }}"
   become: true
   become_user: root
@@ -119,7 +119,7 @@
       when: cluster_type == "RAC"
   tags: rac-db,ssh-keys
 
-- hosts: dbasm[0]
+- hosts: dbasm
   remote_user: "{{ oracle_user }}"
   become: true
   become_user: root
