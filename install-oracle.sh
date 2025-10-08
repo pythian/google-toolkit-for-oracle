@@ -23,7 +23,7 @@ echo
 # Some variables
 #
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
-skip_compatible_rdbms="false"
+INSTALL_WORKLOAD_AGENT="${INSTALL_WORKLOAD_AGENT:-false}"
 #
 # Playbooks
 #
@@ -53,7 +53,7 @@ done
 #
 INVENTORY_DIR="./inventory_files"           # Where to save the inventory files
 INVENTORY_FILE="${INVENTORY_DIR}/inventory" # Default, the whole name will be built later using some parameters
-INSTANCE_HOSTGROUP_NAME="dbasm"             # Constant used for both SI and RAC installations
+DBASM_GROUP="${INSTANCE_HOSTGROUP_NAME:-dbasm}"         # Constant used for both SI and RAC installations
 #
 if [[ ! -d "${INVENTORY_DIR}" ]]; then
   mkdir -p "${INVENTORY_DIR}"
@@ -1110,11 +1110,10 @@ EOF
 else
   INVENTORY_FILE="${INVENTORY_FILE_PARAM}"
 fi
-if [[ -f "${INVENTORY_FILE}" ]]; then
-  printf "\n\033[1;36m%s\033[m\n\n" "Inventory file for this execution: ${INVENTORY_FILE}."
-else
-  printf "\n\033[1;31m%s\033[m\n\n" "Cannot find the inventory file ${INVENTORY_FILE}; cannot continue."
-  exit 124
+# Fix RAC inventories that declare [dbasm:vars] before [dbasm] (Ansible parser error)
+if ! grep -q '^\[dbasm\]' "${INVENTORY_FILE}" && grep -q '^\[dbasm:vars\]' "${INVENTORY_FILE}"; then
+  printf "\n\033[1;33m%s\033[m\n" "Detected [dbasm:vars] without [dbasm] — prepending an empty [dbasm] group."
+  tmp="$(mktemp)"; { echo "[dbasm]"; echo; cat "${INVENTORY_FILE}"; } > "${tmp}" && mv "${tmp}" "${INVENTORY_FILE}"
 fi
 if grep -q '\[primary\]' "${INVENTORY_FILE}" || grep -q '\[standby\]' "${INVENTORY_FILE}"; then
   DBASM_NAME="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
@@ -1296,8 +1295,18 @@ list_hosts() {
   ' "$file"
 }
 
-# Helper: unique lines
-unique() { awk '!seen[$0]++'; }
+# Ensure the workload agent config directory exists when agent install is disabled.
+ensure_workload_agent_dir() {
+  # Only needed when the agent role is skipped; otherwise the role creates it.
+  if [ "${INSTALL_WORKLOAD_AGENT}" != "true" ]; then
+    echo "[precheck] Ensuring /etc/google-cloud-workload-agent exists on all DB hosts..."
+    ansible -i "${INVENTORY_FILE}" "${INSTANCE_HOSTGROUP_NAME:-dbasm}" -b \
+      -m file -a "path=/etc/google-cloud-workload-agent state=directory owner=root group=root mode=0755" \
+      ${INSTANCE_SSH_USER:+-u "${INSTANCE_SSH_USER}"} \
+      ${INSTANCE_SSH_KEY:+--private-key "${INSTANCE_SSH_KEY}"} \
+      || { echo "ERROR: failed to create /etc/google-cloud-workload-agent"; exit 2; }
+  fi
+}
 
 PRIMARY_GROUP_PRESENT="$(has_group primary)"
 STANDBY_GROUP_PRESENT="$(has_group standby)"
@@ -1344,12 +1353,14 @@ else
   PRIMARY_SLICE="${DBASM_GROUP}[0]"
   PRIMARY_HOST="$(list_hosts "${DBASM_GROUP}" | head -n1)"
 fi
+ensure_workload_agent_dir
 
 echo
 echo "Phase 2 -> ${PB_CONFIG_DB} on primary slice: ${PRIMARY_SLICE}"
 env -u PRIMARY_IP_ADDR ${ANSIBLE_PLAYBOOK} ${ANSIBLE_PARAMS} ${ANSIBLE_EXTRA_PARAMS} ${FORKS_OPT} \
   -i "${INVENTORY_FILE}" -l "${PRIMARY_SLICE}" \
   --skip-tags "dg-config,dg_config,dg-create,dg_create,dg-mode,dg_mode" \
+  -e "install_workload_agent=${INSTALL_WORKLOAD_AGENT}" \
   "${PB_CONFIG_DB}"
 
 ############################################
@@ -1384,6 +1395,9 @@ if [ -n "${STANDBYS}" ]; then
 
   echo
   echo "Phase 3 -> ${PB_CONFIG_DB} on standby slice: ${STANDBY_SLICE} (PRIMARY_IP_ADDR=${PRIMARY_IP})"
+  # If agent install is disabled, pre-create its config dir so the role's copy task can't fail
+  ensure_workload_agent_dir
+
   # Run ONLY duplicate + DG bits on standbys.
   PRIMARY_IP_ADDR="${PRIMARY_IP}" ${ANSIBLE_PLAYBOOK} ${ANSIBLE_PARAMS} ${ANSIBLE_EXTRA_PARAMS} ${FORKS_OPT} \
     -i "${INVENTORY_FILE}" -l "${STANDBY_SLICE}" \
@@ -1392,7 +1406,7 @@ if [ -n "${STANDBYS}" ]; then
     -e 'grid_home={{ oracle_home }}' \
     -e 'grid_user={{ oracle_user }}' \
     -e 'lsnr_owner_user={{ oracle_user }}' \
-    -e 'ansible_hostname={{ inventory_hostname }}' \
+    -e "install_workload_agent=${INSTALL_WORKLOAD_AGENT}" \
     "${PB_CONFIG_DB}"
 else
   echo "No standbys detected; skipping Phase 3."
