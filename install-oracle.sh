@@ -423,7 +423,7 @@ while true; do
     shift
     ;;
   --ora-db-container)
-    ORA_DB_CONTAINER="$2"
+    ORA_DB_CONTAINER="$(echo "$2" | tr '[:lower:]' '[:upper:]')"
     shift
     ;;
   --ora-db-type)
@@ -620,7 +620,8 @@ if [[ -n "${PARAM_PB_LIST}" ]]; then
 fi
 #
 # Parameter defaults
-#
+# (normalize hostgroup in case presubmit/env sets it empty)
+INSTANCE_HOSTGROUP_NAME="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
 INSTANCE_HOSTNAME="${INSTANCE_HOSTNAME:-$INSTANCE_IP_ADDR}"
 ORA_STAGING="${ORA_STAGING:-$ORA_SWLIB_PATH}"
 [[ "$COMPATIBLE_RDBMS" == "0" ]] && {
@@ -958,8 +959,9 @@ if [[ -z "${NODES_JSON}" ]]; then
   fi
 fi
 
-# if the hostgroup is not the default then error out when there is no corresponding group_vars/var.yml file
-if [ "${INSTANCE_HOSTGROUP_NAME}" != "dbasm" -a ! -r group_vars/${INSTANCE_HOSTGROUP_NAME}.yml ]; then
+# Default empty to dbasm to avoid false "custom hostgroup" errors
+INSTANCE_HOSTGROUP_NAME="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
+if [ "${INSTANCE_HOSTGROUP_NAME}" != "dbasm" ] && [ ! -r "group_vars/${INSTANCE_HOSTGROUP_NAME}.yml" ]; then
   echo "Custom ansible hostgroup defined as ${INSTANCE_HOSTGROUP_NAME} but no corresponding group_vars/${INSTANCE_HOSTGROUP_NAME}.yml file found"
   exit 2
 fi
@@ -1271,6 +1273,7 @@ set -e
 # we use the new orchestration. Otherwise, we fall back to the legacy loop behavior.
 
 _ORIG_PB_LIST="${PB_LIST}"
+DBASM_GROUP="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
 
 # Helper: does inventory contain a non-empty group section?
 has_group() {
