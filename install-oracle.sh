@@ -1116,43 +1116,45 @@ else
   printf "\n\033[1;31m%s\033[m\n\n" "Cannot find the inventory file ${INVENTORY_FILE}; cannot continue."
   exit 124
 fi
-DBASM_NAME="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
-TMP_INV="$(mktemp)"
-# Delete any existing [dbasm] section to avoid duplicates
-awk -v g="["$DBASM_NAME"]" '
-  BEGIN{skip=0}
-  {
-    if ($0==g) {skip=1; next}
-    if (skip && /^\[/) {skip=0}
-    if (!skip) print $0
-  }
-' "${INVENTORY_FILE}" > "${TMP_INV}"
+if grep -q '\[primary\]' "${INVENTORY_FILE}" || grep -q '\[standby\]' "${INVENTORY_FILE}"; then
+  DBASM_NAME="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
+  TMP_INV="$(mktemp)"
+  # Delete any existing [dbasm] section to avoid duplicates
+  awk -v g="[$DBASM_NAME]" '
+    BEGIN{skip=0}
+    {
+      if ($0==g) {skip=1; next}
+      if (skip && /^\[/) {skip=0}
+      if (!skip) print $0
+    }
+  ' "${INVENTORY_FILE}" > "${TMP_INV}"
 
-# Collect first tokens (hostnames) from [primary] and [standby]
-primary_hosts="$(awk '
-  $0=="[primary]"{flag=1; next}
-  /^\[/ {if(flag){flag=0}}
-  flag && $0 !~ /^[[:space:]]*(#|;|$)/ {print $1}
-' "${TMP_INV}" | awk '!seen[$0]++')"
+  # Collect first tokens (hostnames) from [primary] and [standby]
+  primary_hosts="$(awk '
+    $0=="[primary]"{flag=1; next}
+    /^\[/ {if(flag){flag=0}}
+    flag && $0 !~ /^[[:space:]]*(#|;|$)/ {print $1}
+  ' "${INVENTORY_FILE}" | awk '!seen[$0]++')"
 
-standby_hosts="$(awk '
-  $0=="[standby]"{flag=1; next}
-  /^\[/ {if(flag){flag=0}}
-  flag && $0 !~ /^[[:space:]]*(#|;|$)/ {print $1}
-' "${TMP_INV}" | awk '!seen[$0]++')"
+  standby_hosts="$(awk '
+    $0=="[standby]"{flag=1; next}
+    /^\[/ {if(flag){flag=0}}
+    flag && $0 !~ /^[[:space:]]*(#|;|$)/ {print $1}
+  ' "${INVENTORY_FILE}" | awk '!seen[$0]++')"
 
-# Union (unique, preserve order: primary first, then standby not already present)
-union_hosts="$(printf "%s\n%s\n" "${primary_hosts}" "${standby_hosts}" | awk 'NF && !seen[$0]++')"
+  # Union (unique, preserve order)
+  union_hosts="$(printf "%s\n%s\n" "${primary_hosts}" "${standby_hosts}" | awk 'NF && !seen[$0]++')"
 
-# If we found any hosts, append a fresh [dbasm] group
-if [ -n "${union_hosts}" ]; then
-  {
-    printf "\n[%s]\n" "${DBASM_NAME}"
-    printf "%s\n" "${union_hosts}"
-  } >> "${TMP_INV}"
+  # If we found any hosts, append a fresh [dbasm] group
+  if [ -n "${union_hosts}" ]; then
+    {
+      printf "\n[%s]\n" "${DBASM_NAME}"
+      printf "%s\n" "${union_hosts}"
+    } >> "${TMP_INV}"
+  fi
+
+  mv "${TMP_INV}" "${INVENTORY_FILE}"
 fi
-
-mv "${TMP_INV}" "${INVENTORY_FILE}"
 #
 # Build the log file for this session
 #
