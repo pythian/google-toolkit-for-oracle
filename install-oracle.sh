@@ -23,7 +23,7 @@ echo
 # Some variables
 #
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
-INSTALL_WORKLOAD_AGENT="${INSTALL_WORKLOAD_AGENT:-false}"
+INSTALL_WORKLOAD_AGENT="${INSTALL_WORKLOAD_AGENT:-true}"
 #
 # Playbooks
 #
