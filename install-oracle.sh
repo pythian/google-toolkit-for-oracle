@@ -1268,14 +1268,11 @@ fi
 
 # exit on any error from the following scripts
 set -e
-# === Orchestrated execution with parallel prep/install then primary then standby ===
-# We preserve backward compatibility: if inventory has [primary] or [standby] groups,
-# we use the new orchestration. Otherwise, we fall back to the legacy loop behavior.
+# Orchestrated execution with parallel prep/install then primary then standby
 
 _ORIG_PB_LIST="${PB_LIST}"
 DBASM_GROUP="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
 
-# Helper: does inventory contain a non-empty group section?
 has_group() {
   local group="$1"
   local file="${INVENTORY_FILE}"
@@ -1287,7 +1284,6 @@ has_group() {
   ' "$file"
 }
 
-# Helper: list hostnames (first token per non-comment line) in a group
 list_hosts() {
   local group="$1"
   local file="${INVENTORY_FILE}"
@@ -1298,7 +1294,6 @@ list_hosts() {
   ' "$file"
 }
 
-# Ensure the workload agent config directory exists when agent install is disabled.
 ensure_workload_agent_dir() {
   # Only needed when the agent role is skipped; otherwise the role creates it.
   if [ "${INSTALL_WORKLOAD_AGENT}" != "true" ]; then
@@ -1314,13 +1309,11 @@ ensure_workload_agent_dir() {
 PRIMARY_GROUP_PRESENT="$(has_group primary)"
 STANDBY_GROUP_PRESENT="$(has_group standby)"
 
-# Respect whether DB config is requested (i.e., PB_CONFIG_DB is present in PB_LIST)
 WANT_CONFIG_DB="false"
 case " ${PB_LIST} " in
   *" ${PB_CONFIG_DB} "*) WANT_CONFIG_DB="true" ;;
 esac
 
-# Default forks if not provided
 FORKS_OPT="--forks ${ANSIBLE_FORKS:-10}"
 
 if [ "$PRIMARY_GROUP_PRESENT" = "true" ] || [ "$STANDBY_GROUP_PRESENT" = "true" ]; then
@@ -1328,9 +1321,7 @@ if [ "$PRIMARY_GROUP_PRESENT" = "true" ] || [ "$STANDBY_GROUP_PRESENT" = "true" 
   echo "Detected groups in inventory: primary=${PRIMARY_GROUP_PRESENT}, standby=${STANDBY_GROUP_PRESENT}"
   echo "Executing in phases with per-host parallelism. WANT_CONFIG_DB=${WANT_CONFIG_DB}"
 
-############################################
 # Phase 1: base prep on ALL (primary+standbys)
-############################################
 PHASE1_GROUP="${INSTANCE_HOSTGROUP_NAME:-dbasm}"
 
 for PLAYBOOK in "${PB_CHECK_INSTANCE}" "${PB_PREP_HOST}" "${PB_INSTALL_SW}"; do
@@ -1340,15 +1331,8 @@ for PLAYBOOK in "${PB_CHECK_INSTANCE}" "${PB_PREP_HOST}" "${PB_INSTALL_SW}"; do
     -i "${INVENTORY_FILE}" -l "${PHASE1_GROUP}" "${PLAYBOOK}"
 done
 
-
-
-
-
-
-############################################
 # Phase 2: PRIMARY only — full database build
 unset PRIMARY_IP_ADDR
-############################################
 if [ "$PRIMARY_GROUP_PRESENT" = "true" ]; then
   PRIMARY_SLICE="primary"
   PRIMARY_HOST="$(list_hosts primary | head -n1)"
@@ -1366,9 +1350,8 @@ env -u PRIMARY_IP_ADDR ${ANSIBLE_PLAYBOOK} ${ANSIBLE_PARAMS} ${ANSIBLE_EXTRA_PAR
   -e "install_workload_agent=${INSTALL_WORKLOAD_AGENT}" \
   "${PB_CONFIG_DB}"
 
-############################################
 # Phase 3: STANDBYS — listener + workload-agent + active-duplicate + DG + DBID
-############################################
+
 if [ "$STANDBY_GROUP_PRESENT" = "true" ]; then
   STANDBY_SLICE="standby"
   STANDBYS="$(list_hosts standby)"
@@ -1398,13 +1381,10 @@ if [ -n "${STANDBYS}" ]; then
 
   echo
   echo "Phase 3 -> ${PB_CONFIG_DB} on standby slice: ${STANDBY_SLICE} (PRIMARY_IP_ADDR=${PRIMARY_IP})"
-  # If agent install is disabled, pre-create its config dir so the role's copy task can't fail
   ensure_workload_agent_dir
 
-  # Run ONLY duplicate + DG bits on standbys.
   PRIMARY_IP_ADDR="${PRIMARY_IP}" ${ANSIBLE_PLAYBOOK} ${ANSIBLE_PARAMS} ${ANSIBLE_EXTRA_PARAMS} ${FORKS_OPT} \
     -i "${INVENTORY_FILE}" -l "${STANDBY_SLICE}" \
-    --tags "readiness_checks,readiness-checks,lsnr-create,lsnr_create,workload-agent,workload_agent,active-duplicate,active_duplicate,dg-config,dg_config,dg-create,dg_create,dg-mode,dg_mode" \
     --skip-tags "db-create,db_create,db-adjustments,db_adjustments,db-backups,db_backups,validation-scripts,validation_scripts" \
     -e 'grid_home={{ oracle_home }}' \
     -e 'grid_user={{ oracle_user }}' \
