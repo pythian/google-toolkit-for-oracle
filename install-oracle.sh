@@ -1294,18 +1294,6 @@ list_hosts() {
   ' "$file"
 }
 
-ensure_workload_agent_dir() {
-  # Only needed when the agent role is skipped; otherwise the role creates it.
-  if [ "${INSTALL_WORKLOAD_AGENT}" != "true" ]; then
-    echo "[precheck] Ensuring /etc/google-cloud-workload-agent exists on all DB hosts..."
-    ansible -i "${INVENTORY_FILE}" "${INSTANCE_HOSTGROUP_NAME:-dbasm}" -b \
-      -m file -a "path=/etc/google-cloud-workload-agent state=directory owner=root group=root mode=0755" \
-      ${INSTANCE_SSH_USER:+-u "${INSTANCE_SSH_USER}"} \
-      ${INSTANCE_SSH_KEY:+--private-key "${INSTANCE_SSH_KEY}"} \
-      || { echo "ERROR: failed to create /etc/google-cloud-workload-agent"; exit 2; }
-  fi
-}
-
 PRIMARY_GROUP_PRESENT="$(has_group primary)"
 STANDBY_GROUP_PRESENT="$(has_group standby)"
 
@@ -1340,7 +1328,6 @@ else
   PRIMARY_SLICE="${DBASM_GROUP}[0]"
   PRIMARY_HOST="$(list_hosts "${DBASM_GROUP}" | head -n1)"
 fi
-ensure_workload_agent_dir
 
 echo
 echo "Phase 2 -> ${PB_CONFIG_DB} on primary slice: ${PRIMARY_SLICE}"
@@ -1381,7 +1368,6 @@ if [ -n "${STANDBYS}" ]; then
 
   echo
   echo "Phase 3 -> ${PB_CONFIG_DB} on standby slice: ${STANDBY_SLICE} (PRIMARY_IP_ADDR=${PRIMARY_IP})"
-  ensure_workload_agent_dir
 
   PRIMARY_IP_ADDR="${PRIMARY_IP}" ${ANSIBLE_PLAYBOOK} ${ANSIBLE_PARAMS} ${ANSIBLE_EXTRA_PARAMS} ${FORKS_OPT} \
     -i "${INVENTORY_FILE}" -l "${STANDBY_SLICE}" \
