@@ -52,6 +52,11 @@ cleanup() {
     echo "Public SSH key has been removed from the control node's service account OS Login profile"
   fi
   %{ if delete_control_node }
+  ssh_fw_rule_name="ora-ssh-$control_node_name"
+  echo "Deleting temporary SSH firewall rule $ssh_fw_rule_name..."
+  if ! gcloud --quiet compute firewall-rules delete "$ssh_fw_rule_name" --project="$control_node_project_id"; then
+    echo "WARNING: Failed to delete firewall rule $ssh_fw_rule_name. It may require manual removal."
+  fi
   echo "Deleting '$control_node_name' GCE instance in zone '$control_node_zone' in project '$control_node_project_id'..."
   gcloud --quiet compute instances delete "$control_node_name" --zone="$control_node_zone" --project="$control_node_project_id"
   %{ endif }
