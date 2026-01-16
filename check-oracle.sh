@@ -24,6 +24,8 @@ if [ $? != 4 ]; then
     exit 1
 fi
 
+export ANSIBLE_EXTRA_VARS=''
+
 export INVENTORY_FILE=''
 export AHF_LOCATION=''
 
