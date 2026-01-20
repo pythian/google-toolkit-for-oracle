@@ -46,6 +46,7 @@ The Terraform module deploys the following elements:
 - **Custom Metadata Scripts** for VM initialization
 - **Ansible Playbooks** to automate post-deployment configurations
 - **Firewall Rules** to allow Ansible SSH execution and Data Guard communication
+  (if `create_firewall` is set to `true`)
 
 This infrastructure is modular and customizable, allowing you to tailor it to specific application needs or organizational requirements.
 
@@ -88,7 +89,7 @@ Grant the service account attached to the control node VM the following IAM role
 - `roles/compute.securityAdmin` (or a custom role including
   `compute.firewalls.*`)
   Allows creation of firewall rules for Ansible SSH access and Oracle Data
-  Guard HA, as well as cleanup of firewall rules when the control node is deleted.
+  Guard HA, as well as cleanup of firewall rules when the control node is deleted.  (Only if `create_firewall` is set to `true`)
 - `roles/logging.logWriter`
   Required to write to Google Cloud Logging.
 

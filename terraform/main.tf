@@ -337,6 +337,7 @@ resource "google_compute_instance" "control_node" {
 
 # This rule is deleted by the startup script upon deployment completion.
 resource "google_compute_firewall" "control_ssh" {
+  count       = var.create_firewall ? 1 : 0
   name        = "ora-ssh-${google_compute_instance.control_node.name}"
   project     = var.project_id
   network     = local.network
@@ -355,7 +356,7 @@ resource "google_compute_firewall" "control_ssh" {
 }
 
 resource "google_compute_firewall" "db_sync" {
-  count       = local.is_multi_instance ? 1 : 0
+  count       = (local.is_multi_instance && var.create_firewall) ? 1 : 0
   name        = "oracle-${local.deployment_id}-db-sync"
   project     = var.project_id
   network     = local.network
