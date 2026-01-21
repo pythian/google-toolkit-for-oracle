@@ -384,3 +384,9 @@ variable "ora_disk_mgmt" {
     error_message = "Enter FS (XFS) or ASMUDEV or ASMLIB."
   }
 }
+
+variable "create_firewall" {
+  description = "Create firewall rules for Ansible SSH and Oracle Data Guard"
+  type        = bool
+  default     = false
+}
