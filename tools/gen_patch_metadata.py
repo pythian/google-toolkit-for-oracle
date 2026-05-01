@@ -130,16 +130,16 @@ def main():
     md5_digest = base64.b64encode(md5.digest()).decode('ascii')
 
     (release_name, patch_release, ojvm_subdir, gi_subdir, db_subdir, is_gi) = parse_patch(patch_file, args.patch)
-    
+
+    BASE_OVERRIDES = {
+        '23.0.0.0.0': '23.26.1.0.0',
+        '21.0.0.0.0': '21.3.0.0.0',
+        '19.0.0.0.0': '19.3.0.0.0'
+    }
     major_ver = int(release_name.split('.')[0])
-    if major_ver >= 21:
-        base_release = '23.26.1.0.0' if release_name == '23.0.0.0.0' else release_name
-        prereq_flag = 'false'
-        upgrade_flag = 'false'
-    else:
-        base_release = '19.3.0.0.0' if release_name == '19.0.0.0.0' else release_name
-        prereq_flag = 'true'
-        upgrade_flag = 'true'
+    base_release = BASE_OVERRIDES.get(release_name, release_name)
+    prereq_flag = 'false' if major_ver >= 21 else 'true'
+    upgrade_flag = 'false' if major_ver >= 21 else 'true'
 
     op_url = get_patch_url(s, 6880880)
     major_ver = patch_file.split('_')[1][:5]
