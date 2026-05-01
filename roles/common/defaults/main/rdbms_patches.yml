@@ -167,3 +167,5 @@ rdbms_patches:
   - { category: "DB_RU", base: "21.3.0.0.0", release: "21.21.0.0.0", patchnum: "38725048", patchfile: "p38725048_210000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "GwM+wklzKV+cZpJ5g22WkA==", minimum_opatch: "12.2.0.1.49" }
   - { category: "DB_RU", base: "21.3.0.0.0", release: "21.22.0.0.0", patchnum: "39073698", patchfile: "p39073698_210000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "2ZAshmSSuoTfAJmxQeE/Tg==", minimum_opatch: "12.2.0.1.51" }
 
+# 23ai/26ai DB patches
+  - { category: "DB_RU", base: "23.26.1.0.0", release: "23.26.2.0.0", patchnum: "39093711", patchfile: "p39093711_230000_Linux-x86-64.zip", patch_subdir: "/", prereq_check: false, method: "opatch apply", ocm: false, upgrade: false, md5sum: "vjgZVz8b32CC+dv1ghqLPA==", minimum_opatch: "12.2.0.1.51" }
