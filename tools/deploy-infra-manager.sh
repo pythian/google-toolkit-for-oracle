@@ -99,7 +99,7 @@ TOOLKIT_ZIP_PATH="${ZIP_STAGING_DIR}/toolkit.zip"
 GCS_DESTINATION="${GCS_BUCKET}/toolkit-${DEPLOYMENT_NAME}.zip"
 
 echo "Packaging toolkit..."
-(cd "$PROJECT_ROOT" && zip -r "$TOOLKIT_ZIP_PATH" . -x ".git*" -x ".terraform*" -x "terraform/*" -x "OWNERS" > /dev/null)
+(cd "$PROJECT_ROOT" && zip -r "$TOOLKIT_ZIP_PATH" . -x ".git*" -x "*/.terraform/**" -x "terraform/*" -x "OWNERS" -x "*.zip" -x "*.tfstate" > /dev/null)
 
 echo "Staging toolkit package at ${GCS_DESTINATION}..."
 gcloud storage cp "$TOOLKIT_ZIP_PATH" "$GCS_DESTINATION"
