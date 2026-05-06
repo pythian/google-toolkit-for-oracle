@@ -62,6 +62,6 @@ enable_ar_repo = true
 # TLS / SSL Configuration
 # -----------------------------------------------------------------------------
 enable_tls      = true
-cas_pool_id     = "projects/gcp-oracle-benchmarks/locations/us-east1/caPools/presubmit-ca-pool"
+cas_pool_id     = "projects/gcp-oracle-benchmarks/locations/us-central1/caPools/presubmit-ca-pool"
 dns_zone_name   = "presubmit-private-zone"
 dns_domain_name = "presubmit.internal."
