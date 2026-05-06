@@ -21,7 +21,7 @@ source presubmit_tests/infra-manager-lib.sh || {
 instance_name="github-presubmit-free-${BUILD_ID}"
 deployment_name="presubmit-free-${BUILD_ID}"
 tfvars_file="./presubmit_tests/free-edition.tfvars"
-location="us-central1"
+location="us-east1"
 
 setup_vars
 apply_deployment
