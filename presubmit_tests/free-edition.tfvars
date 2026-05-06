@@ -34,8 +34,8 @@ machine_type = "n4-standard-2"
 boot_disk_type = "hyperdisk-balanced"
 boot_disk_size_gb = "30"
 swap_disk_size_gb = "8"
-zone1 = "us-central1-b"
-subnetwork1 = "projects/gcp-oracle-benchmarks/regions/us-central1/subnetworks/github-presubmit-tests-us-central1"
+zone1 = "us-east1-c"
+subnetwork1 = "projects/gcp-oracle-benchmarks/regions/us-east1/subnetworks/github-presubmit-tests-us-east1"
 oracle_home_disk = {
   size_gb = 50
 }

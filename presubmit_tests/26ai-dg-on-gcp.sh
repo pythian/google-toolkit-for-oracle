@@ -6,7 +6,7 @@ source presubmit_tests/infra-manager-lib.sh || {
 instance_name="github-presubmit-26ai-dg-${BUILD_ID}"
 deployment_name="presubmit-26ai-dg-${BUILD_ID}"
 tfvars_file="./presubmit_tests/26ai-dg.tfvars"
-location="us-central1"
+location="us-east1"
 setup_vars
 apply_deployment
 watch_logs
