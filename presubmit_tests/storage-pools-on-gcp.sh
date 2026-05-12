@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-terraform {
-  required_version = ">= 1.5.7"
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 6.31.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.7.2"
-    }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.9"
-    }
-  }
+source presubmit_tests/infra-manager-lib.sh || {
+  echo "Error: cannot source common library" >&2
+  exit 1
 }
 
+instance_name="github-presubmit-stpools-${BUILD_ID}"
+deployment_name="presubmit-stpools-${BUILD_ID}"
+tfvars_file="./presubmit_tests/storage-pools.tfvars"
+location="us-central1"
+
+setup_vars
+apply_deployment
+watch_logs

@@ -112,6 +112,12 @@ locals {
   # Concatenetes both lists to be passed down to the instance module
   additional_disks = concat(local.fs_disks, local.asm_disks)
 
+  # Storage pool helpers
+  storage_pool_enabled = var.storage_pool != null && try(var.storage_pool.enabled, false)
+
+  # When pool is enabled the template creates no additional inline disks; they are attached separately
+  effective_additional_disks = local.storage_pool_enabled ? [] : local.additional_disks
+
   project_id = var.project_id
 
   subnetwork1_opt = var.subnetwork1 != "" ? var.subnetwork1 : null
@@ -141,6 +147,24 @@ locals {
   deployment_id = var.deployment_name != "" ? var.deployment_name : var.instance_name
   db_tag        = "ora-db-${local.deployment_id}"
   control_tag   = "ora-control-node-${local.deployment_id}"
+
+  # Cartesian product: VM × disk — drives google_compute_disk and google_compute_attached_disk when pool is enabled
+  # key uses hyphens (valid GCP resource name); device_name keeps the original value for /dev/disk/by-id/ paths
+  pool_disk_instances = local.storage_pool_enabled ? {
+    for entry in flatten([
+      for vm_name, vm in local.instances : [
+        for disk in local.additional_disks : {
+          key          = "${vm_name}-${replace(disk.device_name, "_", "-")}"
+          vm_name      = vm_name
+          zone         = vm.zone
+          device_name  = disk.device_name
+          disk_type    = disk.disk_type
+          disk_size_gb = disk.disk_size_gb
+          disk_labels  = disk.disk_labels
+        }
+      ]
+    ]) : entry.key => entry
+  } : {}
 }
 
 # Resolves info for the primary subnetwork (explicit or default)
@@ -209,7 +233,7 @@ resource "google_compute_instance_template" "default" {
   }
 
   dynamic "disk" {
-    for_each = local.additional_disks
+    for_each = local.effective_additional_disks
     content {
       boot         = false
       auto_delete  = disk.value.auto_delete
@@ -252,6 +276,65 @@ resource "google_compute_instance_from_template" "database_vm" {
       content {}
     }
   }
+}
+
+# -----------------------------------------------------------------------------
+# Hyperdisk Storage Pool (optional)
+# -----------------------------------------------------------------------------
+
+resource "google_compute_storage_pool" "zone1" {
+  count   = local.storage_pool_enabled ? 1 : 0
+  project = var.project_id
+  name    = "${var.instance_name}-pool-z1"
+  zone    = var.zone1
+
+  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone1}/storagePoolTypes/${var.storage_pool.storage_pool_type}"
+  capacity_provisioning_type    = var.storage_pool.capacity_provisioning_type
+  deletion_protection = var.storage_pool.deletion_protection
+  performance_provisioning_type = var.storage_pool.performance_provisioning_type
+  pool_provisioned_capacity_gb  = var.storage_pool.pool_provisioned_capacity_gb
+  pool_provisioned_iops         = var.storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.storage_pool.pool_provisioned_iops : null
+  pool_provisioned_throughput   = var.storage_pool.pool_provisioned_throughput
+}
+
+resource "google_compute_storage_pool" "zone2" {
+  count   = (local.storage_pool_enabled && local.is_multi_instance) ? 1 : 0
+  project = var.project_id
+  name    = "${var.instance_name}-pool-z2"
+  zone    = var.zone2
+
+  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone2}/storagePoolTypes/${var.storage_pool.storage_pool_type}"
+  capacity_provisioning_type    = var.storage_pool.capacity_provisioning_type
+  deletion_protection = var.storage_pool.deletion_protection
+  performance_provisioning_type = var.storage_pool.performance_provisioning_type
+  pool_provisioned_capacity_gb  = var.storage_pool.pool_provisioned_capacity_gb
+  pool_provisioned_iops         = var.storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.storage_pool.pool_provisioned_iops : null
+  pool_provisioned_throughput   = var.storage_pool.pool_provisioned_throughput
+}
+
+resource "google_compute_disk" "pool_disks" {
+  for_each = local.pool_disk_instances
+  project  = var.project_id
+  name     = each.key
+  zone     = each.value.zone
+  type     = each.value.disk_type
+  size     = each.value.disk_size_gb
+  labels   = each.value.disk_labels
+
+  storage_pool = (
+    each.value.zone == var.zone1
+    ? google_compute_storage_pool.zone1[0].id
+    : google_compute_storage_pool.zone2[0].id
+  )
+}
+
+resource "google_compute_attached_disk" "pool_disks" {
+  for_each    = local.pool_disk_instances
+  project     = var.project_id
+  disk        = google_compute_disk.pool_disks[each.key].self_link
+  instance    = google_compute_instance_from_template.database_vm[each.value.vm_name].self_link
+  zone        = each.value.zone
+  device_name = each.value.device_name
 }
 
 resource "random_id" "suffix" {
@@ -354,6 +437,16 @@ resource "google_compute_instance" "control_node" {
       )
       error_message = "The 'enable_ar_repo' feature is enabled, but Private Google Access (PGA) is not enabled on the target subnetwork(s). PGA is required for internal access to Artifact Registry."
     }
+
+    precondition {
+      condition = !local.storage_pool_enabled || (
+        var.oracle_home_disk.type == var.storage_pool.storage_pool_type &&
+        var.data_disk.type == var.storage_pool.storage_pool_type &&
+        var.reco_disk.type == var.storage_pool.storage_pool_type &&
+        var.swap_disk_type == var.storage_pool.storage_pool_type
+      )
+      error_message = "When storage_pool is enabled, oracle_home_disk.type, data_disk.type, reco_disk.type, and swap_disk_type must all match storage_pool.storage_pool_type."
+    }
   }
 
   metadata_startup_script = templatefile("${path.module}/scripts/setup.sh.tpl", {
@@ -372,7 +465,10 @@ resource "google_compute_instance" "control_node" {
 
   tags = [local.control_tag]
 
-  depends_on = [google_compute_instance_from_template.database_vm]
+  depends_on = [
+    google_compute_instance_from_template.database_vm,
+    google_compute_attached_disk.pool_disks,
+  ]
 }
 
 # -----------------------------------------------------------------------------
@@ -535,4 +631,14 @@ output "control_node_log_url" {
 output "database_vm_names" {
   description = "Names of the created database VMs from instance templates"
   value       = [for vm in google_compute_instance_from_template.database_vm : vm.name]
+}
+
+output "storage_pool_zone1_self_link" {
+  description = "Self-link of the Hyperdisk Storage Pool in zone1 (null if storage pool is not enabled)"
+  value       = length(google_compute_storage_pool.zone1) > 0 ? google_compute_storage_pool.zone1[0].id : null
+}
+
+output "storage_pool_zone2_self_link" {
+  description = "Self-link of the Hyperdisk Storage Pool in zone2 (null if storage pool is not enabled or single-instance)"
+  value       = length(google_compute_storage_pool.zone2) > 0 ? google_compute_storage_pool.zone2[0].id : null
 }

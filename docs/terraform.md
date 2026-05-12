@@ -16,6 +16,7 @@ This setup supports the deployment of the following configurations:
 - Network configuration using specified subnets and NAT IPs
 - Custom startup scripts for VM initialization (Google Cloud metadata [startup scripts](https://cloud.google.com/compute/docs/instances/startup-scripts/linux))
 - Ansible automation for post-provisioning configuration tasks
+- Storage Pools options for VM deployments
 
 This approach is particularly suitable for deploying and configuring:
 
@@ -41,6 +42,7 @@ The Terraform module deploys the following elements:
   - ASM disks (`asm-1`, `asm-2`)
   - Swap disk
   - Optional data disks (`disk-1`, `disk-2`) for application or database storage
+  - Optional storage pools for data disks
 - **IAM Service Account** for managing VM access
 - **SSH Key Management** using Ansible SSH keys for secure access
 - **Custom Metadata Scripts** for VM initialization

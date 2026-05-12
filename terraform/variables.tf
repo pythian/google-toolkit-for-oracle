@@ -237,6 +237,36 @@ variable "reco_disk" {
   }
 }
 
+variable "storage_pool" {
+  description = "Optional Hyperdisk Storage Pool. When enabled, all non-boot disks are provisioned inside the pool instead of as inline template disks."
+  type = object({
+    enabled                       = optional(bool, false)
+    storage_pool_type             = optional(string, "hyperdisk-balanced")
+    capacity_provisioning_type    = optional(string, "advanced")
+    deletion_protection           = optional(bool, true)
+    performance_provisioning_type = optional(string, "advanced")
+    pool_provisioned_capacity_gb  = optional(number, 10240)
+    pool_provisioned_iops         = optional(number, 10000)
+    pool_provisioned_throughput   = optional(number, 1000)
+  })
+  default = null
+
+  validation {
+    condition = var.storage_pool == null || contains(
+      ["hyperdisk-balanced", "hyperdisk-throughput"],
+      try(var.storage_pool.storage_pool_type, "hyperdisk-balanced")
+    )
+    error_message = "storage_pool.storage_pool_type must be 'hyperdisk-balanced' or 'hyperdisk-throughput'."
+  }
+
+  validation {
+    condition = var.storage_pool == null || (
+      try(var.storage_pool.pool_provisioned_capacity_gb, 10240) >= 10240
+    )
+    error_message = "storage_pool.pool_provisioned_capacity_gb must be at least 10240 (10 TiB minimum)."
+  }
+}
+
 variable "project_id" {
   description = "The Google Cloud project ID where all resources will be deployed."
   type        = string
