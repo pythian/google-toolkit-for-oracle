@@ -61,7 +61,7 @@ GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-staging:,ora-db-name:,ora-db-domain:,ora-d
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-data-destination:,ora-data-diskgroup:,ora-reco-destination:,ora-reco-diskgroup:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-asm-disks:,ora-asm-disks-json:,ora-data-mounts:,ora-data-mounts-json:,ora-listener-port:,ora-listener-name:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-db-ncharset:,ora-db-container:,ora-db-type:,ora-pdb-name-prefix:,ora-pdb-count:,ora-redo-log-size:"
-GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-pga-target-mb:,ora-sga-target-mb:,ora-db-dg-name:"
+GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-pga-target-mb:,ora-sga-target-mb:,ora-db-unique-name:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-redundancy:,archive-redundancy:,archive-online-days:,backup-level0-days:,backup-level1-days:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-start-hour:,backup-start-min:,archive-backup-min:,backup-script-location:,backup-log-location:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-swlib-type:,ora-swlib-path:,ora-swlib-credentials:,instance-ip-addr:,primary-ip-addr:,instance-ssh-user:"
@@ -117,7 +117,7 @@ while true; do
     --cluster-config-json) YAML_VARS["cluster_config_json"]="$2"; shift 2 ;;
     --swap-blk-device) YAML_VARS["swap_blk_device"]="$2"; shift 2 ;;
     --ora-db-name) YAML_VARS["ora_db_name"]="$2"; shift 2 ;;
-    --ora-db-dg-name) YAML_VARS["ora_db_dg_name"]="$2"; shift 2 ;;
+    --ora-db-unique-name) YAML_VARS["ora_db_unique_name"]="$2"; shift 2 ;;
     --ora-db-domain) YAML_VARS["ora_db_domain"]="$2"; shift 2 ;;
     --ora-db-charset) YAML_VARS["ora_db_charset"]="$2"; shift 2 ;;
     --ora-db-ncharset) YAML_VARS["ora_db_ncharset"]="$2"; shift 2 ;;
@@ -256,7 +256,7 @@ if [ "$HELP_ONLY" = true ]; then
   echo "  --cluster-config-json <json> JSON string with cluster configuration."
   echo "  --swap-blk-device <device>   Swap block device path."
   echo "  --ora-db-name <name>         Oracle database name."
-  echo "  --ora-db-dg-name <name>      Oracle database Data Guard name."
+  echo "  --ora-db-unique-name <name>  Oracle database unique name."
   echo "  --ora-db-domain <domain>     Oracle database domain."
   echo "  --ora-db-charset <charset>   Oracle database character set."
   echo "  --ora-db-ncharset <ncharset> Oracle database national character set."

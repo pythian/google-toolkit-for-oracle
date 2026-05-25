@@ -39,7 +39,7 @@
     - name: Check if database is Oracle Restart/Clusterware configured
       shell: |
         set -o pipefail
-        if srvctl config database -d {{ db_name }} &>/dev/null || srvctl config database -d {{ standby_name }} &>/dev/null; then
+        if srvctl config database -d {{ db_name }} &>/dev/null || srvctl config database -d {{ db_unique_name }} &>/dev/null; then
           CLUSTERWARE_USER=$(ps -eo user,comm | awk '/(crsd|ocssd|evmd)\.bin/{print $1}' | sort -u)
         else
           CLUSTERWARE_USER=""

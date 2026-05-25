@@ -16,8 +16,8 @@
 - name: Active-copy | Check if the standby database is already running
   shell: |
     set -o pipefail
-    if srvctl config db -d {{ standby_name }} >/dev/null 2>&1; then
-      srvctl status database -d {{ standby_name }} || true
+    if srvctl config db -d {{ db_unique_name }} >/dev/null 2>&1; then
+      srvctl status database -d {{ db_unique_name }} || true
     else
       ps -ef | grep [o]ra_pmon_{{ oracle_sid }} > /dev/null && echo "{{ oracle_sid }} is running" || true
     fi
@@ -43,11 +43,14 @@
         owner: "{{ oracle_user }}"
         group: "{{ oracle_group }}"
 
+    - name: Active-copy | Get primary db unique name
+      include_tasks: get-db-unique-name.yml
+
     - name: Active-copy | Add static listener entry to primary
       lineinfile:
         path: "{{ grid_home }}/network/admin/listener.ora"
         regexp: "^SID_LIST_{{ listener_name }}"
-        line: "SID_LIST_{{ listener_name }}=(SID_LIST=(SID_DESC=(GLOBAL_DBNAME={{ db_name }}{% if db_domain | default('', true) | length > 0 %}.{{ db_domain }}{% endif %})(ORACLE_HOME={{ oracle_home }})(SID_NAME={{ oracle_sid }})))"
+        line: "SID_LIST_{{ listener_name }}=(SID_LIST=(SID_DESC=(GLOBAL_DBNAME={{ primary_db_unique_name }}{% if db_domain | default('', true) | length > 0 %}.{{ db_domain }}{% endif %})(ORACLE_HOME={{ oracle_home }})(SID_NAME={{ oracle_sid }})))"
         owner: "{{ grid_user }}"
         group: "{{ oracle_group }}"
       delegate_to: primary1
@@ -96,7 +99,7 @@
       lineinfile:
         path: "{{ grid_home }}/network/admin/listener.ora"
         regexp: "^SID_LIST_{{ listener_name }}"
-        line: "SID_LIST_{{ listener_name }}=(SID_LIST=(SID_DESC=(GLOBAL_DBNAME={{ standby_name }}{% if db_domain | default('', true) | length > 0 %}.{{ db_domain }}{% endif %})(ORACLE_HOME={{ oracle_home }})(SID_NAME={{ oracle_sid }})))"
+        line: "SID_LIST_{{ listener_name }}=(SID_LIST=(SID_DESC=(GLOBAL_DBNAME={{ db_unique_name }}{% if db_domain | default('', true) | length > 0 %}.{{ db_domain }}{% endif %})(ORACLE_HOME={{ oracle_home }})(SID_NAME={{ oracle_sid }})))"
         owner: "{{ grid_user }}"
         group: "{{ oracle_group }}"
       register: standby_listener_update
@@ -118,14 +121,6 @@
         timeout: 60
       delegate_to: localhost
       when: standby_listener_update.changed
-
-    - name: Active-copy | Create audit dump directory
-      file:
-        path: "{{ oracle_base }}/admin/{{ oracle_sid }}/adump"
-        state: directory
-        owner: "{{ oracle_user }}"
-        group: "{{ oracle_group }}"
-        mode: "u=wrx,go="
 
     - name: Active-copy | Create auxiliary init file
       template:
@@ -306,7 +301,7 @@
         shutdown immediate
         EOF
         srvctl add db \
-          -d {{ standby_name }} \
+          -d {{ db_unique_name }} \
           -dbname {{ db_name }} \
           -instance {{ oracle_sid }} \
           -oraclehome {{ oracle_home }} {% if db_domain | default('', true) | length > 0 %}-domain {{ db_domain }}{% endif %} \
@@ -315,7 +310,7 @@
           -role PHYSICAL_STANDBY \
           -startoption MOUNT \
           -stopoption IMMEDIATE
-        srvctl start db -d {{ standby_name }}
+        srvctl start db -d {{ db_unique_name }}
       environment:
         ORACLE_HOME: "{{ oracle_home }}"
         ORACLE_SID: "{{ oracle_sid }}"
@@ -336,11 +331,11 @@
         {{ oracle_home }}/bin/sqlplus -s -L / as sysdba <<EOF
         whenever sqlerror exit failure
         create pfile='/tmp/init@.backup' from spfile;
-        create spfile='+{{ data_destination }}/{{ standby_name }}/PARAMETERFILE/spfile.ora' from pfile='/tmp/init@.backup';
+        create spfile='+{{ data_destination }}/{{ db_unique_name }}/PARAMETERFILE/spfile.ora' from pfile='/tmp/init@.backup';
         EOF
-        srvctl modify db -d {{ standby_name }} -spfile '+{{ data_destination }}/{{ standby_name }}/PARAMETERFILE/spfile.ora'
-        srvctl stop db -d {{ standby_name }} -stopoption immediate
-        srvctl start db -d {{ standby_name }}
+        srvctl modify db -d {{ db_unique_name }} -spfile '+{{ data_destination }}/{{ db_unique_name }}/PARAMETERFILE/spfile.ora'
+        srvctl stop db -d {{ db_unique_name }} -stopoption immediate
+        srvctl start db -d {{ db_unique_name }}
       environment:
         ORACLE_HOME: "{{ oracle_home }}"
         ORACLE_SID: "{{ oracle_sid }}"
@@ -382,8 +377,8 @@
 - name: Active-copy | Capture standby database state
   shell: |
     set -o pipefail
-    srvctl config db -d {{ standby_name }}
-    srvctl status db -d {{ standby_name }}
+    srvctl config db -d {{ db_unique_name }}
+    srvctl status db -d {{ db_unique_name }}
   environment:
     ORACLE_HOME: "{{ oracle_home }}"
     ORACLE_SID: "{{ oracle_sid }}"

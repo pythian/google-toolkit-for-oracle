@@ -1,0 +1,36 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Capture Primary db_unique_name
+  shell: |
+    set -o pipefail
+    $ORACLE_HOME/bin/sqlplus -S / as sysdba <<EOF
+      set heading off feedback off pagesize 0 verify off echo off trimspool on
+      select db_unique_name from v\$database;
+      exit;
+    EOF
+  delegate_to: primary1
+  environment:
+    ORACLE_HOME: "{{ oracle_home }}"
+    ORACLE_SID: "{{ oracle_sid }}"
+    PATH: "{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+  become: true
+  become_user: "{{ oracle_user }}"
+  changed_when: false
+  register: sqlplus_output
+
+- name: Assign Primary db_unique_name to a new variable
+  set_fact:
+    primary_db_unique_name: "{{ sqlplus_output.stdout | trim }}"

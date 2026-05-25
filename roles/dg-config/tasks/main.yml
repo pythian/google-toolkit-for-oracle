@@ -16,7 +16,7 @@
 - name: Check if the Data Guard configuration already exists
   shell: |
     set -o pipefail
-    ({{ oracle_home }}/bin/dgmgrl -silent / "show database {{ standby_name }}" || true) | awk '/Database Status:/ {getline; print $1}'
+    ({{ oracle_home }}/bin/dgmgrl -silent / "show database {{ db_unique_name }}" || true) | awk '/Database Status:/ {getline; print $1}'
   environment:
     ORACLE_HOME: "{{ oracle_home }}"
     ORACLE_SID: "{{ oracle_sid }}"
@@ -252,14 +252,18 @@
       delegate_to: primary1
       register: primary_facts
 
+    - include_role:
+        name: db-copy
+        tasks_from: get-db-unique-name.yml
+
     - name: Manually set the StaticConnectIdentifier parameter (MOS Doc ID 1582927.1)
       shell: |
         set -o pipefail
-        STATIC_ID_P="(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={{ primary_facts.ansible_facts.ansible_hostname }})(PORT={{ listener_port | default(1521, true) }}))(CONNECT_DATA=(SERVICE_NAME={{ db_name }})))"
-        STATIC_ID_S="(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={{ standby_facts.ansible_facts.ansible_hostname }})(PORT={{ listener_port | default(1521, true) }}))(CONNECT_DATA=(SERVICE_NAME={{ standby_name }})))"
+        STATIC_ID_P="(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={{ primary_facts.ansible_facts.ansible_hostname }})(PORT={{ listener_port | default(1521, true) }}))(CONNECT_DATA=(SERVICE_NAME={{ primary_db_unique_name }})))"
+        STATIC_ID_S="(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={{ standby_facts.ansible_facts.ansible_hostname }})(PORT={{ listener_port | default(1521, true) }}))(CONNECT_DATA=(SERVICE_NAME={{ db_unique_name }})))"
         {{ oracle_home }}/bin/dgmgrl / <<EOF
-        edit database {{ db_name | lower }}      set property staticConnectidentifier='${STATIC_ID_P}';
-        edit database {{ standby_name | lower }} set property staticConnectidentifier='${STATIC_ID_S}';
+        edit database {{ primary_db_unique_name | lower }} set property staticConnectidentifier='${STATIC_ID_P}';
+        edit database {{ db_unique_name | lower }} set property staticConnectidentifier='${STATIC_ID_S}';
         EOF
 
     - name: Restart standby if required
@@ -276,9 +280,9 @@
       shell: |
         set -o pipefail
         {{ oracle_home }}/bin/dgmgrl / <<EOF
-        enable database {{ standby_name }};
+        enable database {{ db_unique_name }};
         host sleep 60;
-        show database verbose {{ standby_name }};
+        show database verbose {{ db_unique_name }};
         EOF
       when: "'database instance restart required' in dg_create.stdout"
 

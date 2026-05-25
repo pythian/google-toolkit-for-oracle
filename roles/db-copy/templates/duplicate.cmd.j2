@@ -1,11 +1,11 @@
-connect target "{{ rman_user }}/{{ rman_user_pass }}@//{{ primary_ip_addr }}:{{ listener_port | default(1521) }}/{{ db_name }}{% if db_domain | default('') | length > 0 %}.{{ db_domain }}{% endif %} as sysdba";
-connect auxiliary "{{ rman_user }}/{{ rman_user_pass }}@//{{ instance_ip_addr }}:{{ listener_port | default(1521) }}/{{ standby_name }}{% if db_domain | default('') | length > 0 %}.{{ db_domain }}{% endif %} as sysdba";
+connect target "{{ rman_user }}/{{ rman_user_pass }}@//{{ primary_ip_addr }}:{{ listener_port | default(1521) }}/{{ primary_db_unique_name }}{% if db_domain | default('') | length > 0 %}.{{ db_domain }}{% endif %} as sysdba";
+connect auxiliary "{{ rman_user }}/{{ rman_user_pass }}@//{{ instance_ip_addr }}:{{ listener_port | default(1521) }}/{{ db_unique_name }}{% if db_domain | default('') | length > 0 %}.{{ db_domain }}{% endif %} as sysdba";
 DUPLICATE TARGET DATABASE
   FOR STANDBY
   FROM ACTIVE DATABASE
   DORECOVER
   SPFILE
-    SET db_unique_name="{{ standby_name }}"
+    SET db_unique_name="{{ db_unique_name }}"
     RESET log_archive_config
     RESET log_archive_dest_1
     RESET log_archive_dest_2

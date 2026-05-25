@@ -48,8 +48,8 @@
   changed_when: false
   register: db_logxpt_mode
   with_items:
-    - "{{ db_name }}"
-    - "{{ standby_name }}"
+    - "{{ primary_db_unique_name }}"
+    - "{{ db_unique_name }}"
   tags: dg-mode,dg-create
 
 - name: DG Mode | Change the redo transport mode to {{ log_transport_mode }}
@@ -152,10 +152,10 @@
     set -o pipefail
     {{ oracle_home }}/bin/dgmgrl / <<EOF
     show configuration verbose
-    show database verbose {{ db_name | lower }};
-    show database verbose {{ standby_name | lower }};
-    validate database {{ standby_name }};
-    show database {{ standby_name }} statusreport;
+    show database verbose {{ primary_db_unique_name | lower }};
+    show database verbose {{ db_unique_name | lower }};
+    validate database {{ db_unique_name }};
+    show database {{ db_unique_name }} statusreport;
     EOF
   environment:
     ORACLE_HOME: "{{ oracle_home }}"

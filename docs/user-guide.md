@@ -1945,6 +1945,16 @@ include alphanumeric characters, underscore, number sign, and
 dollar sign</td>
 </tr>
 <tr>
+<td>Database unique name</td>
+<td><p><pre>
+ORA_DB_UNIQUE_NAME
+--ora-db-unique-name
+</pre></p></td>
+<td>user defined<br>
+ORA_DB_NAME</td>
+<td></td>
+</tr>
+<tr>
 <td>Database domain</td>
 <td><p><pre>
 ORA_DB_DOMAIN
