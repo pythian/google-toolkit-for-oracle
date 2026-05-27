@@ -37,6 +37,12 @@
     ORACLE_SID: "{{ oracle_sid }}"
     PATH: "{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
   block:
+    - name: Get primary db unique name if not already defined
+      include_role:
+        name: db-copy
+        tasks_from: get-db-unique-name.yml
+      when: primary_db_unique_name is undefined
+
     - name: Define SQL commands to add standby redo logs
       set_fact:
         sql_for_dg: |
@@ -251,10 +257,6 @@
         gather_subset: "min"
       delegate_to: primary1
       register: primary_facts
-
-    - include_role:
-        name: db-copy
-        tasks_from: get-db-unique-name.yml
 
     - name: Manually set the StaticConnectIdentifier parameter (MOS Doc ID 1582927.1)
       shell: |

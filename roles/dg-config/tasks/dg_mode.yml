@@ -13,6 +13,12 @@
 # limitations under the License.
 
 ---
+- name: Get primary db unique name if not already defined
+  include_role:
+    name: db-copy
+    tasks_from: get-db-unique-name.yml
+  when: primary_db_unique_name is undefined
+
 - name: DG Mode | Capture the current Data Guard protection mode
   shell: |
     set -o pipefail

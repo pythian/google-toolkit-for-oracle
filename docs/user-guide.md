@@ -1951,7 +1951,7 @@ ORA_DB_UNIQUE_NAME
 --ora-db-unique-name
 </pre></p></td>
 <td>user defined<br>
-ORA_DB_NAME</td>
+ORA_DB_NAME (primary), ORA_DB_NAME_s (standby)</td>
 <td></td>
 </tr>
 <tr>
