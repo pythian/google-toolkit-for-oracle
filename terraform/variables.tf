@@ -237,8 +237,8 @@ variable "reco_disk" {
   }
 }
 
-variable "storage_pool" {
-  description = "Optional Hyperdisk Storage Pool. When enabled, all non-boot disks are provisioned inside the pool instead of as inline template disks."
+variable "create_storage_pool" {
+  description = "Configuration for auto-creating a storage pool for sandbox/testing. If enabled, a new pool will be created in each deployment zone."
   type = object({
     enabled                       = optional(bool, false)
     storage_pool_type             = optional(string, "hyperdisk-balanced")
@@ -247,24 +247,37 @@ variable "storage_pool" {
     performance_provisioning_type = optional(string, "advanced")
     pool_provisioned_capacity_gb  = optional(number, 10240)
     pool_provisioned_iops         = optional(number, 10000)
-    pool_provisioned_throughput   = optional(number, 1000)
+    pool_provisioned_throughput   = optional(number, 1024)
   })
   default = null
 
   validation {
-    condition = var.storage_pool == null || contains(
+    condition = var.create_storage_pool == null || contains(
       ["hyperdisk-balanced", "hyperdisk-throughput"],
-      try(var.storage_pool.storage_pool_type, "hyperdisk-balanced")
+      try(var.create_storage_pool.storage_pool_type, "hyperdisk-balanced")
     )
     error_message = "storage_pool.storage_pool_type must be 'hyperdisk-balanced' or 'hyperdisk-throughput'."
   }
 
   validation {
-    condition = var.storage_pool == null || (
-      try(var.storage_pool.pool_provisioned_capacity_gb, 10240) >= 10240
+    condition = var.create_storage_pool == null || (
+      try(var.create_storage_pool.pool_provisioned_capacity_gb, 10240) >= 10240
     )
     error_message = "storage_pool.pool_provisioned_capacity_gb must be at least 10240 (10 TiB minimum)."
   }
+
+  validation {
+    condition = var.create_storage_pool == null || (
+      try(var.create_storage_pool.pool_provisioned_throughput, 1024) % 1024 == 0
+    )
+    error_message = "storage_pool.pool_provisioned_throughput must be a multiple of 1024."
+  }
+}
+
+variable "existing_storage_pools" {
+  description = "Map of existing storage pools to use, keyed by zone (e.g. {'us-central1-b' = 'projects/.../storagePools/pool-b'}). If provided, disks in these zones will be attached to the specified pools."
+  type        = map(string)
+  default     = {}
 }
 
 variable "project_id" {

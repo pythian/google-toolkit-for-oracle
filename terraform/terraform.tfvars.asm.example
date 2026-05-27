@@ -79,3 +79,21 @@ install_workload_agent     = true
 oracle_metrics_secret      = ""
 db_password_secret         = ""
 data_guard_protection_mode = "Maximum Availability"
+
+
+# --- Optional Shared Storage Pools ---
+# To create new database disks using a shared Hyperdisk Storage Pools:
+#create_storage_pool = {
+#  enabled                       = true
+#  storage_pool_type             = "hyperdisk-balanced"
+#  capacity_provisioning_type    = "ADVANCED"
+#  performance_provisioning_type = "ADVANCED"
+#  pool_provisioned_capacity_gb  = 10240 # minimum 10 TiB
+#  pool_provisioned_iops         = 10000
+#  pool_provisioned_throughput   = 1024 # multiple of 1024 required
+#}
+# To attach the database disks to pre-existing shared Hyperdisk Storage Pools (recommended for production):
+# existing_storage_pools = {
+#   "us-central1-b" = "projects/my-project/zones/us-central1-b/storagePools/shared-pool-z1"
+#   "us-central1-c" = "projects/my-project/zones/us-central1-c/storagePools/shared-pool-z2"
+# }

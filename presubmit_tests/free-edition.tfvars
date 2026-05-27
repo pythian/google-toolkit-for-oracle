@@ -53,3 +53,16 @@ ora_db_name = "orcl"
 ora_db_domain = "test1.example_domain01.com"
 ora_db_container = true
 
+
+# --- Optional Shared Storage Pools ---
+# To create new database disks using a shared Hyperdisk Storage Pools:
+create_storage_pool = {
+ enabled                       = true
+ storage_pool_type             = "hyperdisk-balanced"
+ capacity_provisioning_type    = "ADVANCED"
+ deletion_protection           = false
+ performance_provisioning_type = "ADVANCED"
+ pool_provisioned_capacity_gb  = 10240 # minimum 10 TiB
+ pool_provisioned_iops         = 10000
+ pool_provisioned_throughput   = 1024 # multiple of 1024 required
+}

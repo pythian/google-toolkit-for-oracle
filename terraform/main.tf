@@ -112,8 +112,11 @@ locals {
   # Concatenetes both lists to be passed down to the instance module
   additional_disks = concat(local.fs_disks, local.asm_disks)
 
-  # Storage pool helpers
-  storage_pool_enabled = var.storage_pool != null && try(var.storage_pool.enabled, false)
+  # Storage pool enabled if either auto-create is requested OR existing pools are mapped
+  storage_pool_enabled = (var.create_storage_pool != null && try(var.create_storage_pool.enabled, false)) || length(var.existing_storage_pools) > 0
+
+  # Only create new pools if create is enabled AND no existing pools are mapped
+  create_pool_enabled = var.create_storage_pool != null && try(var.create_storage_pool.enabled, false) && length(var.existing_storage_pools) == 0
 
   # When pool is enabled the template creates no additional inline disks; they are attached separately
   effective_additional_disks = local.storage_pool_enabled ? [] : local.additional_disks
@@ -283,33 +286,33 @@ resource "google_compute_instance_from_template" "database_vm" {
 # -----------------------------------------------------------------------------
 
 resource "google_compute_storage_pool" "zone1" {
-  count   = local.storage_pool_enabled ? 1 : 0
+  count   = local.create_pool_enabled ? 1 : 0
   project = var.project_id
   name    = "${var.instance_name}-pool-z1"
   zone    = var.zone1
 
-  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone1}/storagePoolTypes/${var.storage_pool.storage_pool_type}"
-  capacity_provisioning_type    = var.storage_pool.capacity_provisioning_type
-  deletion_protection = var.storage_pool.deletion_protection
-  performance_provisioning_type = var.storage_pool.performance_provisioning_type
-  pool_provisioned_capacity_gb  = var.storage_pool.pool_provisioned_capacity_gb
-  pool_provisioned_iops         = var.storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.storage_pool.pool_provisioned_iops : null
-  pool_provisioned_throughput   = var.storage_pool.pool_provisioned_throughput
+  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone1}/storagePoolTypes/${var.create_storage_pool.storage_pool_type}"
+  capacity_provisioning_type    = var.create_storage_pool.capacity_provisioning_type
+  deletion_protection           = var.create_storage_pool.deletion_protection
+  performance_provisioning_type = var.create_storage_pool.performance_provisioning_type
+  pool_provisioned_capacity_gb  = var.create_storage_pool.pool_provisioned_capacity_gb
+  pool_provisioned_iops         = var.create_storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.create_storage_pool.pool_provisioned_iops : null
+  pool_provisioned_throughput   = var.create_storage_pool.pool_provisioned_throughput
 }
 
 resource "google_compute_storage_pool" "zone2" {
-  count   = (local.storage_pool_enabled && local.is_multi_instance) ? 1 : 0
+  count   = (local.create_pool_enabled && local.is_multi_instance) ? 1 : 0
   project = var.project_id
   name    = "${var.instance_name}-pool-z2"
   zone    = var.zone2
 
-  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone2}/storagePoolTypes/${var.storage_pool.storage_pool_type}"
-  capacity_provisioning_type    = var.storage_pool.capacity_provisioning_type
-  deletion_protection = var.storage_pool.deletion_protection
-  performance_provisioning_type = var.storage_pool.performance_provisioning_type
-  pool_provisioned_capacity_gb  = var.storage_pool.pool_provisioned_capacity_gb
-  pool_provisioned_iops         = var.storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.storage_pool.pool_provisioned_iops : null
-  pool_provisioned_throughput   = var.storage_pool.pool_provisioned_throughput
+  storage_pool_type             = "projects/${var.project_id}/zones/${var.zone2}/storagePoolTypes/${var.create_storage_pool.storage_pool_type}"
+  capacity_provisioning_type    = var.create_storage_pool.capacity_provisioning_type
+  deletion_protection           = var.create_storage_pool.deletion_protection
+  performance_provisioning_type = var.create_storage_pool.performance_provisioning_type
+  pool_provisioned_capacity_gb  = var.create_storage_pool.pool_provisioned_capacity_gb
+  pool_provisioned_iops         = var.create_storage_pool.storage_pool_type == "hyperdisk-balanced" ? var.create_storage_pool.pool_provisioned_iops : null
+  pool_provisioned_throughput   = var.create_storage_pool.pool_provisioned_throughput
 }
 
 resource "google_compute_disk" "pool_disks" {
@@ -322,9 +325,13 @@ resource "google_compute_disk" "pool_disks" {
   labels   = each.value.disk_labels
 
   storage_pool = (
-    each.value.zone == var.zone1
-    ? google_compute_storage_pool.zone1[0].id
-    : google_compute_storage_pool.zone2[0].id
+    length(var.existing_storage_pools) > 0
+    ? lookup(var.existing_storage_pools, each.value.zone, null)
+    : (
+      each.value.zone == var.zone1
+      ? one(google_compute_storage_pool.zone1[*].id)
+      : one(google_compute_storage_pool.zone2[*].id)
+    )
   )
 }
 
@@ -440,10 +447,10 @@ resource "google_compute_instance" "control_node" {
 
     precondition {
       condition = !local.storage_pool_enabled || (
-        var.oracle_home_disk.type == var.storage_pool.storage_pool_type &&
-        var.data_disk.type == var.storage_pool.storage_pool_type &&
-        var.reco_disk.type == var.storage_pool.storage_pool_type &&
-        var.swap_disk_type == var.storage_pool.storage_pool_type
+        var.oracle_home_disk.type == var.create_storage_pool.storage_pool_type &&
+        var.data_disk.type == var.create_storage_pool.storage_pool_type &&
+        var.reco_disk.type == var.create_storage_pool.storage_pool_type &&
+        var.swap_disk_type == var.create_storage_pool.storage_pool_type
       )
       error_message = "When storage_pool is enabled, oracle_home_disk.type, data_disk.type, reco_disk.type, and swap_disk_type must all match storage_pool.storage_pool_type."
     }
