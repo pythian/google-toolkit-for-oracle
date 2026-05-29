@@ -5,7 +5,7 @@ This Oracle Toolkit for Google Cloud document will support Disaster Recovery (DR
 Implementation involves two similar steps:
 
 1. Deployment of a Data Guard **primary** database instance via the normal toolkit deployment steps (for details on this see the [main toolkit user guide](user-guide.md) or the [Compute Engine deployment user guide](compute-vm-user-guide.md)).
-2. Deployment of a Data Guard physical **standby** instance via a similar toolkit command, with additional parameters: `--cluster-type DG`, `--primary_ip_addr [IP ADDRESS]`, and `--ora-db-dg-name [UNIQUE NAME]`.
+2. Deployment of a Data Guard physical **standby** instance via a similar toolkit command, with additional parameters: `--cluster-type DG`, `--primary-ip-addr [IP ADDRESS]`, and `--ora-db-unique-name [UNIQUE NAME]`.
 
 You can provision multiple Data Guard instances in a star topology by repeating step #2.
 Once provisioned, more advanced Oracle Data Guard High Availability (HA) and Disaster Recovery (DR) configurations can then be manually added. 
