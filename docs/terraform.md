@@ -41,6 +41,7 @@ The Terraform module deploys the following elements:
   - ASM disks (`asm-1`, `asm-2`)
   - Swap disk
   - Optional data disks (`disk-1`, `disk-2`) for application or database storage
+  - Optional storage pools for data disks
 - **IAM Service Account** for managing VM access
 - **SSH Key Management** using Ansible SSH keys for secure access
 - **Custom Metadata Scripts** for VM initialization
@@ -66,6 +67,25 @@ For multi-node Oracle Data Guard deployments:
 - Standby node: "<instance_name>-2"
 
 Example: If instance_name = "oracle-db", the primary VM will be oracle-db-1 and the standby VM will be oracle-db-2.
+
+---
+
+## Hyperdisk Storage Pools (Optional)
+
+Hyperdisk Storage Pools allow you to aggregate storage capacity and performance across multiple virtual machines. This is highly recommended for multi-database environments to improve storage efficiency and reduce costs.
+
+The toolkit supports two modes of operation:
+
+1.  **Auto-Create (Sandbox / Testing)**: The toolkit creates a dedicated storage pool on the fly for the deployment. Configure this using the `create_storage_pool` block in your `.tfvars`. Note that GCE storage pools have a 10 TiB minimum capacity constraint and are billed for provisioned capacity.
+2.  **Existing Shared Pool (Production / Shared Environments)**: Recommended for production. The toolkit attaches the database disks directly to pre-created shared storage pools, bypassing the need for the deployment service account to have creation permissions. Configure this by mapping your zones to existing pool IDs in the `existing_storage_pools` map.
+
+Example of using existing pools in `terraform.tfvars`:
+```tfvars
+existing_storage_pools = {
+  "us-central1-b" = "projects/my-project/zones/us-central1-b/storagePools/shared-pool-z1"
+  "us-central1-c" = "projects/my-project/zones/us-central1-c/storagePools/shared-pool-z2"
+}
+```
 
 ---
 
