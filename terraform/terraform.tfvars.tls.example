@@ -22,10 +22,11 @@ subnetwork2   = "projects/your-gcp-project-id/regions/us-central1/subnetworks/yo
 # ------------------------------------------------------------------------
 # Oracle Database Software & Storage Configuration
 # ------------------------------------------------------------------------
-ora_version      = "26"                     # Setting to 26ai
-ora_edition      = "EE"
-ora_db_name      = "orcl"
-ora_db_container = "true"
+ora_version      	= "26"            # Setting to 26ai
+ora_edition      	= "EE"
+ora_db_name      	= "orcl"
+ora_db_unique_name 	= "ora19p"
+ora_db_container 	= "true"
 
 # Explicitly setting Disk Management to Filesystem (FS) instead of ASM
 ora_disk_mgmt    = "FS"
