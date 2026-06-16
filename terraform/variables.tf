@@ -94,6 +94,16 @@ variable "ora_db_name" {
   }
 }
 
+variable "ora_db_unique_name" {
+  type        = string
+  default     = ""
+  description = "The Oracle database unique name (optional, Primary or Standby). Must be empty or 1-30 characters, using only letters, numbers, or underscores."
+  validation {
+    condition     = var.ora_db_unique_name == "" || can(regex("^[a-zA-Z][a-zA-Z0-9_]{0,29}$", var.ora_db_unique_name))
+    error_message = "The ora_db_unique_name must be empty or contain only letters, numbers, and underscores, be between 1 and 30 characters long, and must start with a letter."
+  }
+}
+
 variable "ora_db_domain" {
   type        = string
   default     = ""

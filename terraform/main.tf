@@ -372,6 +372,7 @@ locals {
     var.ora_version != "" ? "--ora-version ${var.ora_version}" : "",
     var.ora_backup_dest != "" ? "--backup-dest ${var.ora_backup_dest}" : "",
     var.ora_db_name != "" ? "--ora-db-name ${var.ora_db_name}" : "",
+    var.ora_db_unique_name != "" ? "--ora-db-unique-name ${var.ora_db_unique_name}" : "",
     var.ora_db_domain != "" ? "--ora-db-domain ${var.ora_db_domain}" : "",
     var.ora_db_container != "" ? "--ora-db-container ${var.ora_db_container}" : "",
     var.ntp_pref != "" ? "--ntp-pref ${var.ntp_pref}" : "",
