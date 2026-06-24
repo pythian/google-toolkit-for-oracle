@@ -13,4 +13,4 @@
 # limitations under the License.
 
 ---
-db_script_files: "{{ (['archivelog_mode.sh'] if not standby_setup | default(False) else []) + ['db_modifications.sh'] }}"
+db_script_files: "{{ (['archivelog_mode.sh', 'recreate_redo.sql'] if not standby_setup | default(False) else []) + ['db_modifications.sh'] }}"

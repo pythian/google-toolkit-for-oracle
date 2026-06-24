@@ -26,10 +26,15 @@
   tags: db-adjustments
 
 - name: Run database adjustment scripts on target server
-  shell: "{{ swlib_unzip_path }}/{{ item }}"
+  shell:
+    cmd: "./{{ item }}"
+    chdir: "{{ swlib_unzip_path }}"
   environment:
-    PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+    ORACLE_HOME: "{{ oracle_home }}"
+    ORACLE_SID: "{{ oracle_sid }}"
+    PATH: "{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
   with_items: "{{ db_script_files }}"
+  when: item.endswith('.sh')
   register: scripts_output
   ignore_errors: true
   become: true

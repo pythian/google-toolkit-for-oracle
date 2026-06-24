@@ -175,6 +175,21 @@
         fail_msg: "Redo log size '{{ ora_redo_log_size }}' must be in the format '100MB'."
       when: ora_redo_log_size is defined
 
+    - name: Validate ora_redo_log_count
+      ansible.builtin.assert:
+        that:
+          - ora_redo_log_count is match('^[0-9]+$')
+          - ora_redo_log_location is defined
+        fail_msg: "Redo log count '{{ ora_redo_log_count }}' must be a number and --ora-redo-log-location must be specified."
+      when: ora_redo_log_count is defined
+
+    - name: Validate ora_redo_log_location
+      ansible.builtin.assert:
+        that:
+          - ora_redo_log_location is match('^(?:\+[\w.-]+|/[\w./-]+)(?:\s*,\s*(?:\+[\w.-]+|/[\w./-]+))*$')
+        fail_msg: "Redo log location '{{ ora_redo_log_location }}' must be a coma-separated list of directories."
+      when: ora_redo_log_location is defined
+
     - name: Validate GCS backup bucket
       ansible.builtin.assert:
         that:
