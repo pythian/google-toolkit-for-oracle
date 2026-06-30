@@ -30,3 +30,10 @@ EOF
 {% if groups['dbasm'] | length > 1 %}
 srvctl start db -d {{ db_name }}
 {% endif %}
+
+{% if redologlocation | length > 1 %}
+sqlplus -s -L / as sysdba <<EOF
+whenever sqlerror exit failure
+@recreate_redo {{ redologsize }}M {{ redologcount }} "{{ redologlocation }}"
+EOF
+{% endif %}

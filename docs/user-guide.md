@@ -2048,6 +2048,26 @@ ORA_REDO_LOG_SIZE
 <td></td>
 </tr>
 <tr>
+<td>Redo log count</td>
+<td><p><pre>
+ORA_REDO_LOG_COUNT
+--ora-redo-log-count
+</pre></td>
+<td>user defined<br>
+3</td>
+<td></td>
+</tr>
+<tr>
+<td>Redo log location</td>
+<td><p><pre>
+ORA_REDO_LOG_LOCATION
+--ora-redo-log-location
+</pre></td>
+<td>comma-separated list of directories<br>
+</td>
+<td></td>
+</tr>
+<tr>
 <td>PGA target</td>
 <td><p><pre>
 ORA_PGA_TARGET_MB

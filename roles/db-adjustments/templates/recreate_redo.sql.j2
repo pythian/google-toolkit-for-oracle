@@ -1,0 +1,112 @@
+set linesize 200 pagesize 1000 serveroutput on size 50000 verify off
+col size_mb format 999999999
+prompt Original redo log configuration
+SELECT thread#, group#, bytes/1024/1024 size_mb, members FROM V$LOG ORDER BY 1,2;
+
+DECLARE
+    v_log_size     VARCHAR2(50) := '&1';
+    v_group_count  NUMBER := &2;
+    v_locations    VARCHAR2(4000) := '&3';
+
+    TYPE t_string_list IS TABLE OF VARCHAR2(1000) INDEX BY BINARY_INTEGER;
+    v_loc_list     t_string_list;
+    v_cur_group    NUMBER;
+
+    v_sql          VARCHAR2(4000);
+    v_members_sql  VARCHAR2(4000);
+
+    PROCEDURE check_and_add_group(p_thread NUMBER) IS
+        v_cnt NUMBER;
+    BEGIN
+        SELECT count(*) INTO v_cnt FROM V$LOG WHERE thread# = p_thread;
+        IF v_cnt = 2 THEN
+            v_sql := 'ALTER DATABASE ADD LOGFILE THREAD ' || p_thread || ' SIZE 100M';
+            EXECUTE IMMEDIATE v_sql;
+        END IF;
+    END;
+
+    FUNCTION get_group_num(p_thread NUMBER, p_num NUMBER) RETURN NUMBER IS
+        res NUMBER;
+    BEGIN
+        SELECT group# INTO RES FROM (SELECT group#, ROWNUM R FROM (SELECT group# FROM V$LOG ORDER BY group#)) WHERE R = p_num;
+        return res;
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+        BEGIN
+            SELECT prev_group + 1 INTO res
+            FROM (SELECT group#, LAG(group#, 1, 0) OVER (ORDER BY group#) AS prev_group FROM V$LOG WHERE thread# = p_thread)
+            WHERE group# - prev_group > 1
+            ORDER BY prev_group;
+        EXCEPTION WHEN NO_DATA_FOUND THEN
+            SELECT MAX(group#) + 1 INTO res FROM V$LOG;
+        END;
+        return res;
+    END;
+
+    PROCEDURE switch_and_clear_group(p_group IN NUMBER) IS
+        v_status VARCHAR2(50);
+        v_cnt NUMBER := 0;
+    BEGIN
+        LOOP
+            SELECT status INTO v_status FROM V$LOG WHERE group# = p_group;
+            v_cnt := v_cnt + 1;
+            EXIT WHEN v_status NOT IN ('CURRENT', 'ACTIVE') OR v_cnt > 10;
+            BEGIN
+                EXECUTE IMMEDIATE 'ALTER SYSTEM ARCHIVE LOG CURRENT';
+                EXECUTE IMMEDIATE 'ALTER SYSTEM CHECKPOINT';
+            EXCEPTION WHEN OTHERS THEN NULL;
+            END;
+        END LOOP;
+    END switch_and_clear_group;
+
+    PROCEDURE add_logfile(p_thread number, p_group number) IS
+    BEGIN
+        v_sql := 'ALTER DATABASE ADD LOGFILE THREAD ' || p_thread || ' GROUP ' || p_group || ' ';
+        v_members_sql := '';
+
+        FOR m IN 1..v_loc_list.COUNT LOOP
+            IF SUBSTR(v_loc_list(m), 1, 1) = '+' THEN
+                v_members_sql := v_members_sql || '''' || v_loc_list(m) || ''',';
+            ELSE
+                v_members_sql := v_members_sql || '''' || v_loc_list(m) || '/redo_g' || p_group || 'm' || m || '.dbf'',';
+            END IF;
+        END LOOP;
+        v_members_sql := RTRIM(v_members_sql, ',');
+        v_sql := v_sql || '(' || v_members_sql || ') SIZE ' || v_log_size || ' REUSE';
+        EXECUTE IMMEDIATE v_sql;
+    END;
+
+BEGIN
+    SELECT TRIM(REGEXP_SUBSTR(v_locations, '[^,]+', 1, LEVEL))  BULK COLLECT INTO v_loc_list FROM DUAL
+    WHERE LENGTH(TRIM(REGEXP_SUBSTR(v_locations, '[^,]+', 1, LEVEL))) > 1
+    CONNECT BY REGEXP_SUBSTR(v_locations, '[^,]+', 1, LEVEL) IS NOT NULL;
+
+    FOR t IN (SELECT * FROM V$THREAD) LOOP
+
+        check_and_add_group(t.THREAD#);
+        FOR g IN 1..v_group_count LOOP
+
+            v_cur_group := get_group_num(t.THREAD#, g);
+            BEGIN
+                switch_and_clear_group(v_cur_group);
+                v_sql := 'ALTER DATABASE DROP LOGFILE GROUP ' || v_cur_group;
+                EXECUTE IMMEDIATE v_sql;
+            EXCEPTION WHEN NO_DATA_FOUND THEN NULL;
+            END;
+            add_logfile(t.THREAD#, v_cur_group);
+
+        END LOOP;
+
+    END LOOP;
+
+    FOR g in (SELECT GROUP# FROM (SELECT group#, row_number() OVER (PARTITION BY thread# order by group#) rn FROM V$LOG) WHERE rn > v_group_count)
+    LOOP
+        switch_and_clear_group(g.GROUP#);
+        v_sql := 'ALTER DATABASE DROP LOGFILE GROUP ' || g.GROUP#;
+        EXECUTE IMMEDIATE v_sql;
+    END LOOP;
+
+END;
+/
+
+prompt Modified redo log configuration
+SELECT thread#, group#, bytes/1024/1024 size_mb, members FROM V$LOG ORDER BY 1,2;

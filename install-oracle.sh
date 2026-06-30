@@ -61,7 +61,7 @@ GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-staging:,ora-db-name:,ora-db-domain:,ora-d
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-data-destination:,ora-data-diskgroup:,ora-reco-destination:,ora-reco-diskgroup:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-asm-disks:,ora-asm-disks-json:,ora-data-mounts:,ora-data-mounts-json:,ora-listener-port:,ora-listener-name:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-db-ncharset:,ora-db-container:,ora-db-type:,ora-pdb-name-prefix:,ora-pdb-count:,ora-redo-log-size:"
-GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-pga-target-mb:,ora-sga-target-mb:,ora-db-unique-name:"
+GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-redo-log-count:,ora-redo-log-location:,ora-pga-target-mb:,ora-sga-target-mb:,ora-db-unique-name:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-redundancy:,archive-redundancy:,archive-online-days:,backup-level0-days:,backup-level1-days:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,backup-start-hour:,backup-start-min:,archive-backup-min:,backup-script-location:,backup-log-location:"
 GETOPT_OPTIONAL="$GETOPT_OPTIONAL,ora-swlib-type:,ora-swlib-path:,ora-swlib-credentials:,instance-ip-addr:,primary-ip-addr:,instance-ssh-user:"
@@ -126,6 +126,8 @@ while true; do
     --ora-pdb-name-prefix) YAML_VARS["ora_pdb_name_prefix"]="$2"; shift 2 ;;
     --ora-pdb-count) YAML_VARS["ora_pdb_count"]="$2"; shift 2 ;;
     --ora-redo-log-size) YAML_VARS["ora_redo_log_size"]="$2"; shift 2 ;;
+    --ora-redo-log-count) YAML_VARS["ora_redo_log_count"]="$2"; shift 2 ;;
+    --ora-redo-log-location) YAML_VARS["ora_redo_log_location"]="$2"; shift 2 ;;
     --ora-pga-target-mb) YAML_VARS["ora_pga_target_mb"]="$2"; shift 2 ;;
     --ora-sga-target-mb) YAML_VARS["ora_sga_target_mb"]="$2"; shift 2 ;;
     --db-password-secret) YAML_VARS["_db_password_secret"]="$2"; shift 2 ;;
@@ -264,7 +266,9 @@ if [ "$HELP_ONLY" = true ]; then
   echo "  --ora-db-type <type>         Oracle database type (multipurpose, data_warehousing, oltp)."
   echo "  --ora-pdb-name-prefix <prefix> PDB name prefix."
   echo "  --ora-pdb-count <count>      Number of PDBs."
-  echo "  --ora-redo-log-size <size>   Redo log file size (e.g., 100MB)."
+  echo "  --ora-redo-log-size <size>   Redo log member file size (e.g., 100MB)."
+  echo "  --ora-redo-log-count <num>   Redo log groups count."
+  echo "  --ora-redo-log-location      Redo log members location(s) (coma separated)."
   echo "  --ora-pga-target-mb <mb>     PGA target in MB."
   echo "  --ora-sga-target-mb <mb>     SGA target in MB."
   echo "  --db-password-secret <secret> Secret for database password."
