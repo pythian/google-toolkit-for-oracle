@@ -214,7 +214,7 @@ variable "boot_disk_size_gb" {
 }
 
 variable "boot_disk_type" {
-  description = "The type of the boot disk for the database VM."
+  description = "The type of the boot disk for the database VM. 'hyperdisk-extreme' is not supported for boot disks."
   type        = string
   default     = "hyperdisk-balanced"
 }
@@ -226,13 +226,13 @@ variable "swap_disk_size_gb" {
 }
 
 variable "swap_disk_type" {
-  description = "The type of the swap disk for the database VM."
+  description = "The type of the swap disk for the database VM. 'hyperdisk-extreme' requires an M4N series machine_type and at least 200 GB."
   type        = string
   default     = "hyperdisk-balanced"
 }
 
 variable "oracle_home_disk" {
-  description = "The Oracle binaries (/u01) disk."
+  description = "The Oracle binaries (/u01) disk. type = 'hyperdisk-extreme' requires an M4N series machine_type and size_gb of at least 200."
   type = object({
     size_gb = optional(number, 100)
     type    = optional(string, "hyperdisk-balanced")
@@ -244,7 +244,7 @@ variable "oracle_home_disk" {
 }
 
 variable "data_disk" {
-  description = "The Oracle data disk."
+  description = "The Oracle data disk. type = 'hyperdisk-extreme' requires an M4N series machine_type and size_gb of at least 200."
   type = object({
     size_gb = optional(number, 100)
     type    = optional(string, "hyperdisk-balanced")
@@ -256,7 +256,7 @@ variable "data_disk" {
 }
 
 variable "reco_disk" {
-  description = "The Oracle fast recovery area disk."
+  description = "The Oracle fast recovery area disk. type = 'hyperdisk-extreme' requires an M4N series machine_type and size_gb of at least 200."
   type = object({
     size_gb = optional(number, 100)
     type    = optional(string, "hyperdisk-balanced")
@@ -295,7 +295,7 @@ variable "create_storage_pool" {
       ["hyperdisk-balanced", "hyperdisk-throughput"],
       try(var.create_storage_pool.storage_pool_type, "hyperdisk-balanced")
     )
-    error_message = "storage_pool.storage_pool_type must be 'hyperdisk-balanced' or 'hyperdisk-throughput'."
+    error_message = "storage_pool.storage_pool_type must be 'hyperdisk-balanced' or 'hyperdisk-throughput'. Hyperdisk Storage Pools are not offered for other disk types; in particular 'hyperdisk-extreme' disks cannot be created in, or attached to, a storage pool."
   }
 
   validation {

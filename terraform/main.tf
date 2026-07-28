@@ -199,6 +199,38 @@ locals {
       ]
     ]) : entry.key => entry
   } : {}
+
+  # Every Hyperdisk this module creates: the boot disk plus additional_disks. Both
+  # creation paths (the inline instance-template disks and the standalone
+  # google_compute_disk.pool_disks) are built from this list.
+  managed_disk_devices = concat(
+    [{ device_name = "boot", disk_type = var.boot_disk_type, disk_size_gb = var.boot_disk_size_gb }],
+    [for d in local.additional_disks : { device_name = d.device_name, disk_type = d.disk_type, disk_size_gb = d.disk_size_gb }]
+  )
+
+  # hyperdisk-extreme constraints, enforced by the control_node preconditions below.
+  # Requires an M4N series machine type and a minimum of 200 GB per disk. It cannot
+  # back the boot disk or live in a Hyperdisk Storage Pool.
+  hyperdisk_extreme_type          = "hyperdisk-extreme"
+  hyperdisk_extreme_machine_regex = "^m4n-"
+  hyperdisk_extreme_min_size_gb   = 200
+
+  hyperdisk_extreme_devices = [
+    for d in local.managed_disk_devices : d.device_name
+    if lower(d.disk_type) == local.hyperdisk_extreme_type
+  ]
+
+  hyperdisk_extreme_undersized_devices = [
+    for d in local.managed_disk_devices : "${d.device_name} (${d.disk_size_gb} GB)"
+    if lower(d.disk_type) == local.hyperdisk_extreme_type && d.disk_size_gb < local.hyperdisk_extreme_min_size_gb
+  ]
+
+  # Storage Pools exist only for hyperdisk-balanced and hyperdisk-throughput. The
+  # boot disk is never pooled, so only additional_disks are checked here.
+  hyperdisk_extreme_pooled_devices = local.storage_pool_enabled ? [
+    for d in local.additional_disks : d.device_name
+    if lower(d.disk_type) == local.hyperdisk_extreme_type
+  ] : []
 }
 
 # Resolves info for the primary subnetwork (explicit or default)
@@ -598,6 +630,29 @@ resource "google_compute_instance" "control_node" {
         var.swap_disk_type == var.create_storage_pool.storage_pool_type
       )
       error_message = "When storage_pool is enabled, oracle_home_disk.type, data_disk.type, reco_disk.type, and swap_disk_type must all match storage_pool.storage_pool_type."
+    }
+
+    precondition {
+      condition = (
+        length(local.hyperdisk_extreme_devices) == 0 ||
+        can(regex(local.hyperdisk_extreme_machine_regex, lower(var.machine_type)))
+      )
+      error_message = "hyperdisk-extreme is requested for disk(s) [${join(", ", local.hyperdisk_extreme_devices)}], which requires an M4N series machine_type (m4n-*). Got machine_type '${var.machine_type}'."
+    }
+
+    precondition {
+      condition     = length(local.hyperdisk_extreme_undersized_devices) == 0
+      error_message = "hyperdisk-extreme requires at least ${local.hyperdisk_extreme_min_size_gb} GB per disk device. Increase the size of: ${join(", ", local.hyperdisk_extreme_undersized_devices)}."
+    }
+
+    precondition {
+      condition     = lower(var.boot_disk_type) != local.hyperdisk_extreme_type
+      error_message = "boot_disk_type must not be 'hyperdisk-extreme': hyperdisk-extreme volumes cannot be used as boot disks. Use 'hyperdisk-balanced' for the boot disk."
+    }
+
+    precondition {
+      condition     = length(local.hyperdisk_extreme_pooled_devices) == 0
+      error_message = "Hyperdisk Storage Pools only support hyperdisk-balanced and hyperdisk-throughput disks, so hyperdisk-extreme disk(s) [${join(", ", local.hyperdisk_extreme_pooled_devices)}] cannot be created inside a pool. Either change their type, or remove create_storage_pool / existing_storage_pools."
     }
 
     precondition {
