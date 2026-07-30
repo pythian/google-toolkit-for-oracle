@@ -39,7 +39,9 @@ machine_type         = "n4-standard-2"
 # Feel free to adjust the disk sizes and types to match your requirements.
 # You can add more disks to the list below to create additional disks for ASM or filesystem.
 # fs_disks will be mounted as /u01, /u02, /u03, etc and formatted as XFS
-# Disk type options "pd-balanced", "pd-ssd", "pd-standard", "hyperdisk-extreme"
+# Disk type options: "hyperdisk-balanced" (default), "hyperdisk-extreme", "pd-balanced", "pd-ssd", "pd-standard"
+# "hyperdisk-extreme" needs an M4N series machine_type, min 200 GB per disk, and cannot
+# be a boot disk or live in a Storage Pool.
 boot_disk_type    = "hyperdisk-balanced"
 boot_disk_size_gb    = 50
 

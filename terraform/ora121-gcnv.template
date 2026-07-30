@@ -56,6 +56,10 @@ storage_backend = "gcnv"
 # --- Disk Settings ---
 # All Terraform installs create these three mandatory disks formatted as XFS:
 # /u01 (Home), /u02 (Data), and /u03 (RECO). This cannot be modified.
+# Disk type options (boot and swap only in this mode; u01/DATA/RECO are GCNV iSCSI LUNs):
+# "hyperdisk-balanced" (default), "hyperdisk-extreme", "pd-balanced", "pd-ssd", "pd-standard".
+# "hyperdisk-extreme" needs an M4N series machine_type, min 200 GB per disk, and cannot
+# be a boot disk or live in a Storage Pool.
 boot_disk_type    = "hyperdisk-balanced"
 boot_disk_size_gb = 50
 
