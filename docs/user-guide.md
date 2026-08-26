@@ -1573,7 +1573,7 @@ PRIMARY_IP_ADDR
 </td>
 <td>user defined - no default</td>
 <td>The IP address of the primary server to use as source of primary database
-for Data Guard configuration.<br>
+for Data Guard and Observer configuration.<br>
 Applicable for Oracle "single instance" installations.</td>
 </tr>
 <tr>
@@ -2422,6 +2422,14 @@ server.</td>
 </pre></p></td>
 <td></td>
 <td>Run the "config-db.yml" playbook only.</td>
+</tr>
+<tr>
+<td></td>
+<td><p><pre>
+--config-observer
+</pre></p></td>
+<td></td>
+<td>Run the "config-observer.yml" playbook only.</td>
 </tr>
 <tr>
 <td></td>
