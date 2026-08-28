@@ -20,5 +20,5 @@ observer_reconnect: 127
 
 wallet_dir: "{{ oracle_base }}/admin/{{ ora_db_name }}/wallet"
 
-observer_state_file: {{ scripts_dir }}/fsfo.dat
-observer_log_file: {{ logs_dir }}/fsfo.log
+observer_state_file: "{{ scripts_dir }}/fsfo.dat"
+observer_log_file: "{{ logs_dir }}/fsfo.log"
