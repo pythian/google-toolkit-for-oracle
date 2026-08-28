@@ -2839,7 +2839,8 @@ ORA_EDITION
 --ora-edition
 </pre></p></td>
 <td>FREE</td>
-<td>Specify "FREE" to install the free edition.</td>
+<td>Specify "FREE" to install the free edition.
+Specify "CLIENT" to install the client (for example, in a Fast-Start Failover configuration).</td>
 </tr>
 <tr>
 <td>Oracle version</td>

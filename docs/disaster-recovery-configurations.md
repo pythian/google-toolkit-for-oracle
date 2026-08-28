@@ -11,7 +11,7 @@ You can provision multiple Data Guard instances in a star topology by repeating 
 Once provisioned, more advanced Oracle Data Guard High Availability (HA) and Disaster Recovery (DR) configurations can then be manually added. 
 This includes [cascading](https://docs.oracle.com/en/database/oracle/oracle-database/19/sbydb/oracle-data-guard-redo-transport-services.html#SBYDB-GUID-34BCB162-D996-4678-97F1-497805764950) or [far sync](https://docs.oracle.com/en/database/oracle/oracle-database/19/sbydb/creating-oracle-data-guard-far-sync-instance.html) topologies.
 
-An optional [Fast-Start Failover](https://docs.oracle.com/en/database/oracle/oracle-database/19/dgbkr/using-data-guard-broker-to-manage-switchovers-failovers.html#DGBKR-GUID-995CED84-BEA1-4675-9C68-B37CB996924F) can be deployed by provisioning an **observer** machine and running toolkit with `--config-observer` option after `--prep-host` and `--install-sw` calls.
+An optional [Fast-Start Failover](https://docs.oracle.com/en/database/oracle/oracle-database/19/dgbkr/using-data-guard-broker-to-manage-switchovers-failovers.html#DGBKR-GUID-995CED84-BEA1-4675-9C68-B37CB996924F) can be deployed by provisioning an **observer** machine and running toolkit with `--config-observer` option.
 
 ## Example Toolkit Invocations
 
@@ -57,30 +57,12 @@ export STANDBY_IP_ADDR=10.0.10.103
 export PRIMARY_IP_ADDRESS=10.0.10.101
 
 ./install-oracle.sh \
-  --prep-host \
-  --instance-ip-addr ${STANDBY_IP_ADDR} \
-  --instance-hostname standby-server-19c \
-  --ora-version 19 \
-  --ora-disk-mgmgt FS \
-  --ora-swlib-bucket gs://[BUCKET_NAME] \
-  --ora-data-mounts-json '[{"purpose":"software","blk_device":"/dev/disk/by-id/google-oracle-disk-1","name":"u01","fstype":"xfs","mount_point":"/u01","mount_opts":"nofail"}]'  
-
-./install-oracle.sh \
-  --install-sw \
-  --instance-ip-addr ${STANDBY_IP_ADDR} \
-  --instance-hostname standby-server-19c \
-  --ora-version 19 \
-  --ora-disk-mgmgt FS \
-  --ora-swlib-bucket gs://[BUCKET_NAME] \
-  --ora-data-mounts-json '[{"purpose":"software","blk_device":"/dev/disk/by-id/google-oracle-disk-1","name":"u01","fstype":"xfs","mount_point":"/u01","mount_opts":"nofail"}]' 
-  
-./install-oracle.sh \
   --config-observer \
   --cluster-type DG \
   --instance-ip-addr ${STANDBY_IP_ADDR} \
   --primary-ip-addr ${PRIMARY_IP_ADDRESS} \
   --instance-hostname standby-server-19c \
-  --ora-version 19 \
+  --ora-version 19 --ora-edition CLIENT \
   --ora-disk-mgmgt FS \
   --ora-swlib-bucket gs://[BUCKET_NAME] \
   --ora-data-mounts-json '[{"purpose":"software","blk_device":"/dev/disk/by-id/google-oracle-disk-1","name":"u01","fstype":"xfs","mount_point":"/u01","mount_opts":"nofail"}]'
@@ -185,13 +167,7 @@ Customize the Oracle databases and Data Guard configurations provisioned using t
 
 1. Supported for Oracle Database versions 19c and above.
 
-2. The playbook creates a user with `SYSDG` privilege, and its password is stored in an auto-login  wallet on the FSFO host.
-
-3. FSFO provisioning re-run will change the `SYSDG` user password and will update the wallet password as well.
-
-4. The wallet password is stored in the `oracle-toolkit.tmp` file. Check it out and remove it after the deployment.
-
-5. The FSFO observer startup has be handled manually
+2. The playbook creates a user with `SYSDG` privilege, and its password is stored in an auto-login wallet on the FSFO host.
 
 ## Troubleshooting Overview
 

@@ -198,6 +198,7 @@
     file: hugepages.yml
     apply:
       tags: hugepages
+  when: not (ora_edition | lower == 'client')
   tags: hugepages
 
 - name: Adjust kernel limits for users

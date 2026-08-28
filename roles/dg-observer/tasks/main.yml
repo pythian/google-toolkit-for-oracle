@@ -118,13 +118,21 @@
     - name: Create a wallet
       shell: |
         set -o pipefail
-        rm -rf "{{ wallet_dir }}"/*
-        echo -e "${WALLET_PWD}\n${WALLET_PWD}\n" | mkstore -wrl "{{ wallet_dir }}" -create
+        mkstore -wrl "{{ wallet_dir }}" -create<<EOF
+        ${WALLET_PWD}
+        ${WALLET_PWD}
+        EOF
         for x in {{ db_names.stdout }}; do
           echo -e "${OBSERVER_PWD}\n${OBSERVER_PWD}\n${WALLET_PWD}\n" | 
-            mkstore -wrl "{{ wallet_dir }}" -createCredential "${x^^}" "{{ dg_observer_user }}"
+            mkstore -wrl "{{ wallet_dir }}" -createCredential "${x^^}" "{{ dg_observer_user }}"<<EOF
+        ${OBSERVER_PWD}
+        ${OBSERVER_PWD}
+        ${WALLET_PWD}
+        EOF
         done
-        echo -e "${WALLET_PWD}\n" | orapki wallet create -wallet "{{ wallet_dir }}" -auto_login_local
+        orapki wallet create -wallet "{{ wallet_dir }}" -auto_login_local<<EOF
+        ${WALLET_PWD}
+        EOF
         chmod 600 "{{ wallet_dir }}"/*
       environment:
         ORACLE_HOME: "{{ oracle_home }}"
@@ -132,11 +140,6 @@
         PATH: "{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
         WALLET_PWD: "{{ dg_wallet_pass }}"
         OBSERVER_PWD: "{{ dg_observer_pass }}"
-
-    - name: Store wallet password in a text file
-      copy:
-        content: "{{ dg_wallet_pass }}"
-        dest: "{{ wallet_dir }}/oracle-toolkit.tmp"
 
 - name: Update Data Guard FSFO properties
   delegate_to: primary1
@@ -192,18 +195,35 @@
   block:
     - name: Copy observer start script
       template:
-        src: "{{ observer_script }}.j2"
-        dest: "{{observer_script_dir}}/{{ observer_script }}"
+        src: "item.j2"
+        dest: "{{ scripts_dir }}/item"
         owner: "{{ oracle_user }}"
         group: "{{ oracle_group }}"
         mode: "ug=rwx,o="
+      with_items:
+        - start_observer.sh
+        - stop_observer.sh
 
-    - name: Start the observer
-      shell: "{{observer_script_dir}}/{{ observer_script }}"
+    - name: Copy service definition
+      become_user: root
+      template:
+        src: oracle-observer.j2
+        dest: /etc/systemd/system/oracle-observer.service
+        owner: root
+        group: root
+        mode: u=wr,g=r,o=r
 
-    - name: Wait for a few seconds
-      pause:
-        seconds: 10
+    - name: Reload systemd
+      become_user: root
+      systemd:
+        daemon_reload: true
+
+    - name: Enable automatic start and stop of Oracle observer
+      become_user: root
+      systemd:
+        name: oracle-observer.service
+        enabled: true
+        state: started
 
     - name: Check FSFO status
       shell: dgmgrl /@{{ dg_primary }} "show fast_start failover;"

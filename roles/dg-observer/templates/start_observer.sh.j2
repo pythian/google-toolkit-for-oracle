@@ -17,4 +17,8 @@ export ORACLE_SID="{{ oracle_sid }}"
 export PATH="{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
 export LD_LIBRARY_PATH="{{ oracle_home }}/lib:${LD_LIBRARY_PATH}"
 
-dgmgrl /@{{dg_primary}} "start observer $(hostname) in background file is {{ observer_state_file }} logfile is {{ observer_log_file }} connect identifier is {{ dg_primary }};"
+cd $(dirname {{ observer_state_file }})
+
+dgmgrl /@{{dg_primary}} "stop observer $(hostname)"
+
+dgmgrl /@{{dg_primary}} "start observer $(hostname) file is {{ observer_state_file }} logfile is {{ observer_log_file }};"

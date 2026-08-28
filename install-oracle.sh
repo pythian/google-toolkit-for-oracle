@@ -244,12 +244,12 @@ if [ "$HELP_ONLY" = true ]; then
   echo "  --install-sw                 Run only the software installation playbook and exit."
   echo "  --no-patch                   Set Oracle release to 'base' (skip patching)."
   echo "  --config-db                  Run only the database configuration playbook and exit."
-  echo "  --config-observer            Run only the Data Guard observer configuration playbook and exit."
+  echo "  --config-observer            Run the Data Guard Observer installation and configuration playbooks."
   echo "  --skip-database-config       Skip database configuration."
   echo "  --install-workload-agent     Install the workload agent."
   echo "  --ora-version <version>      Oracle version (e.g., 19, 23, 26)."
   echo "  --ora-release <release>      Oracle release (e.g., 19.0.0.0.0)."
-  echo "  --ora-edition <edition>      Oracle edition (EE, SE, SE2, FREE)."
+  echo "  --ora-edition <edition>      Oracle edition (EE, SE, SE2, FREE, CLIENT)."
   echo "  --cluster-type <type>        Cluster type (NONE, RAC, DG)."
   echo "  --ora-swlib-bucket <bucket>  GCS bucket for Oracle software library."
   echo "  --ora-swlib-type <type>      Software library type (gcs, gcsfuse, nfs, gcsdirect, gcstransfer)."
@@ -334,7 +334,7 @@ elif [ "$INSTALL_SW_ONLY" = true ]; then
 elif [ "$CONFIG_DB_ONLY" = true ]; then
   PB_LIST="${PB_CONFIG_DB}"
 elif [ "$CONFIG_OBSERVER" = true ]; then
-  PB_LIST="${PB_CONFIG_OBSERVER}"
+  PB_LIST="${PB_VALIDATE} ${PB_CHECK_INSTANCE} ${PB_PREP_HOST} ${PB_INSTALL_SW} ${PB_PATCH} ${PB_CONFIG_OBSERVER}"
 else
   PB_LIST="${PB_VALIDATE} ${PB_CHECK_INSTANCE} ${PB_PREP_HOST} ${PB_INSTALL_SW} ${PB_PATCH} ${PB_CONFIG_DB} ${PB_COMPATIBLE}"
 fi

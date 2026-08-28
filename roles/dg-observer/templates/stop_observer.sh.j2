@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+export ORACLE_HOME="{{ oracle_home }}"
+export ORACLE_SID="{{ oracle_sid }}"
+export PATH="{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+export LD_LIBRARY_PATH="{{ oracle_home }}/lib:${LD_LIBRARY_PATH}"
 
----
-fsfo_auto_reinstate: true
-fsfo_threshold: 30
-fsfo_lag_limit: 10
-observer_reconnect: 127
+cd $(dirname {{ observer_state_file }})
 
-wallet_dir: "{{ oracle_base }}/admin/{{ ora_db_name }}/wallet"
-
-observer_state_file: {{ scripts_dir }}/fsfo.dat
-observer_log_file: {{ logs_dir }}/fsfo.log
+dgmgrl /@{{dg_primary}} "stop observer $(hostname)"
