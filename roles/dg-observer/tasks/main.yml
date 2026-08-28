@@ -195,8 +195,8 @@
   block:
     - name: Copy observer start script
       template:
-        src: "item.j2"
-        dest: "{{ scripts_dir }}/item"
+        src: "{{ item }}.j2"
+        dest: "{{ scripts_dir }}/{{ item }}"
         owner: "{{ oracle_user }}"
         group: "{{ oracle_group }}"
         mode: "ug=rwx,o="
