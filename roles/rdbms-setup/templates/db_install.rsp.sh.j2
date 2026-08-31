@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RSP_FILE={% if ora_edition | lower == "client" %}"clientsetup.rsp"{% else %}"db_install.rsp"{% endif %}
+RSP_FILE={% if oracle_edition | lower == "client" %}"clientsetup.rsp"{% else %}"db_install.rsp"{% endif %}
 
 # Define source and destination for the response file
 {% if oracle_ver == "11.2.0.4.0" or oracle_ver == "12.1.0.2.0" or oracle_ver == "12.2.0.1.0" %}
@@ -14,7 +14,7 @@ RSP_DEST="{{ swlib_unzip_path }}/db_install.rsp"
 [[ -r "$RSP_SRC" ]] || { echo "db_install.rsp.sh: cannot read $RSP_SRC"; exit 1; }
 cp "$RSP_SRC" "$RSP_DEST"
 
-{% if ora_edition | lower == "client" %}
+{% if oracle_edition | lower == "client" %}
 echo "oracle.install.client.installType=Administrator" >> "$RSP_DEST"
 {% endif %}
 
