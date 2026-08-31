@@ -199,6 +199,9 @@ if [[ -z "${YAML_VARS[cluster_config_json]}" && -n "${YAML_VARS[cluster_config]}
   YAML_VARS["cluster_config_json"]="${JSON_CONTENT}"
   unset YAML_VARS["cluster_config"]
 fi
+if [[ "${YAML_VARS[ora_edition]^^}" == "CLIENT" ]]; then
+  YAML_VARS["ora_role_separation"]="false"
+fi
 
 
 # If a custom inventory file is provided, use it directly.

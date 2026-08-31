@@ -14,6 +14,10 @@ RSP_DEST="{{ swlib_unzip_path }}/db_install.rsp"
 [[ -r "$RSP_SRC" ]] || { echo "db_install.rsp.sh: cannot read $RSP_SRC"; exit 1; }
 cp "$RSP_SRC" "$RSP_DEST"
 
+{% if ora_edition | lower == "client" %}
+echo "oracle.install.client.installType=Administrator" >> "$RSP_DEST"
+{% endif %}
+
 # 1. Installation Options and Edition (Handling modern and legacy keys)
 # Use [# ]* to match optional comment characters or spaces at the start of the line
 sed -i 's~^[# ]*\(oracle.install.option\|installOption\)=.*$~\1=INSTALL_DB_SWONLY~' "$RSP_DEST"

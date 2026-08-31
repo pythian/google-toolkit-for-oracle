@@ -103,6 +103,11 @@
   become: true
   become_user: "{{ oracle_user }}"
   block:
+    - name: Delete Wallet Directory if exists
+      file:
+        path: "{{ wallet_dir }}"
+        state: absent
+
     - name: Create Wallet Directory
       file:
         path: "{{ wallet_dir }}"
@@ -123,8 +128,7 @@
         ${WALLET_PWD}
         EOF
         for x in {{ db_names.stdout }}; do
-          echo -e "${OBSERVER_PWD}\n${OBSERVER_PWD}\n${WALLET_PWD}\n" | 
-            mkstore -wrl "{{ wallet_dir }}" -createCredential "${x^^}" "{{ dg_observer_user }}"<<EOF
+          mkstore -wrl "{{ wallet_dir }}" -createCredential "${x^^}" "{{ dg_observer_user }}"<<EOF
         ${OBSERVER_PWD}
         ${OBSERVER_PWD}
         ${WALLET_PWD}
@@ -193,6 +197,17 @@
     PATH: "{{ oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
   when: "'Fast-Start Failover: Enabled' in fsfo_status.stdout"
   block:
+    - name: Make sure scripts and logs directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ oracle_user }}"
+        group: "{{ oracle_group }}"
+        mode: ug=wrx,o=
+      with_items:
+        - "{{ scripts_dir }}"
+        - "{{ logs_dir }}"
+
     - name: Copy observer start script
       template:
         src: "{{ item }}.j2"
