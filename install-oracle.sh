@@ -201,6 +201,7 @@ if [[ -z "${YAML_VARS[cluster_config_json]}" && -n "${YAML_VARS[cluster_config]}
 fi
 if [[ "${YAML_VARS[ora_edition]^^}" == "CLIENT" ]]; then
   YAML_VARS["ora_role_separation"]="false"
+  SKIP_DATABASE_CONFIG=true
 fi
 
 
