@@ -63,7 +63,7 @@ export PRIMARY_IP_ADDRESS=10.0.10.101
   --primary-ip-addr ${PRIMARY_IP_ADDRESS} \
   --instance-hostname standby-server-19c \
   --ora-version 19 --ora-edition CLIENT \
-  --ora-disk-mgmgt FS \
+  --ora-disk-mgmt FS \
   --ora-swlib-bucket gs://[BUCKET_NAME] \
   --ora-data-mounts-json '[{"purpose":"software","blk_device":"/dev/disk/by-id/google-oracle-disk-1","name":"u01","fstype":"xfs","mount_point":"/u01","mount_opts":"nofail"}]'
 ```

@@ -2429,7 +2429,7 @@ server.</td>
 --config-observer
 </pre></p></td>
 <td></td>
-<td>Run the "config-observer.yml" playbook only.</td>
+<td>Run the Data Guard Observer installation and configuration playbooks.</td>
 </tr>
 <tr>
 <td></td>
